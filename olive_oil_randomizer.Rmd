@@ -9,16 +9,47 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## This code will perform complete randomization on participants who have not yet been assigned to treatment or control groups. It will also perform a simple binary randomization on participants who have not yet been assigned to take either olive oil #1 or #2 first. 
 
-```{r import data}
+```{r import dependencies}
+#install.packages("writexl")
 library(readxl)
 library(data.table)
-data <- read_excel("./Olive Oil Experiment Participant List_2_25_22.xlsx", sheet = 'Sheet1', skip = 2, col_names = TRUE)
+library("writexl")
+
+set.seed(14) 
+```
+
+
+```{r import data}
+file <- "Olive Oil Experiment Participant List_2_25_22.xlsx"
+data <- read_excel(file, sheet = 'Sheet1', skip = 2, col_names = TRUE)
 data <- data.table(data)
-head(data)
 ```
 
 ```{r random assignment to treatment and control}
+azzigned <- data[is.na(azzignment) == FALSE]
 needs_azzignment <- data[is.na(azzignment) == TRUE]
-head(needs_azzignment)
 
+rand_assignment_vec <- sample(rep(c('control', 'treatment'), each=ceiling(nrow(needs_azzignment)/2)))
+
+if (nrow(needs_azzignment) < length(rand_assignment_vec)) {
+  rand_assignment_vec <-rand_assignment_vec[-2]}
+
+needs_azzignment[ , azzignment := rand_assignment_vec]
+azzigned_data1 <- rbind(azzigned, needs_azzignment)
 ```
+
+```{r random assignment to first olive oil}
+azzigned <- azzigned_data1[is.na(first_oo) == FALSE]
+needs_azzignment <- azzigned_data1[is.na(first_oo) == TRUE]
+
+rand_assignment_vec <- rbinom(n=nrow(needs_azzignment), size=1, prob=0.5)
+
+needs_azzignment[ , first_oo := rand_assignment_vec]
+azzigned_data2 <- rbind(azzigned, needs_azzignment)
+```
+
+```{r write new excel file}
+random_file = paste("randomized_", file, sep="")
+write_xlsx(azzigned_data2, random_file)
+```
+
