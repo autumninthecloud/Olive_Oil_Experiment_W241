@@ -18,10 +18,11 @@ library("writexl")
 set.seed(14) 
 ```
 
-
 ```{r import data}
-file <- "Olive Oil Experiment Participant List_3_11_22.xlsx"
-data <- read_excel(file, sheet = 'Sheet1', skip = 2, col_names = TRUE)
+filename <- "Olive Oil Experiment Participant List_3_15_22.xlsx" # Change Me!
+
+data <- read_excel(paste("./data/participant_data/", filename, sep=""),
+                   sheet = 'Sheet1', skip = 2, col_names = TRUE)
 data <- data.table(data)
 head(data)
 nrow(data)
@@ -51,7 +52,7 @@ azzigned_data2 <- rbind(azzigned, needs_azzignment)
 ```
 
 ```{r write new excel file}
-random_file = paste("randomized_", file, sep="")
-write_xlsx(azzigned_data2, random_file)
+random_file = paste("./data/randomized_participant_data/randomized_", filename, sep="")
+write_xlsx(azzigned_data2, full_random_file_name)
 ```
 
