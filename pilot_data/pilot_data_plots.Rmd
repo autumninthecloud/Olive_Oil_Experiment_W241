@@ -1,23 +1,143 @@
 ---
-title: "Pilot Data Plot"
+title: "Olive Oil Taste Test Pilot Data"
 output: pdf_document
 date: '2022-03-15'
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r load packages, warning=FALSE, message = FALSE}
+```{r load packages, warning=FALSE, message = FALSE, echo=FALSE}
+tinytex::install_tinytex()
+
 library(data.table)
 library(ggplot2)
+library(reshape)
 library(readxl)
+library(stringr)
 ```
 
-```{r import data}
-file <- "Olive Oil Experiment Participant List_3_15_22.xlsx"
-data <- read_excel(file, sheet = 'Sheet1', skip = 2, col_names = TRUE)
+```{r import data, echo=FALSE}
+filename <- "randomized_Olive Oil Experiment Participant List_3_15_22.xlsx"
+
+data <- read_excel(paste("../data/randomized_participant_data/", filename, sep=""), 
+                   sheet = 'Sheet1', skip = 0, col_names = TRUE)
 data <- data.table(data)
-head(data)
-nrow(data)
 ```
+
+```{r build header, echo=FALSE}
+# Add `tested` variable, Tested if Signed Agreement != NaN.
+data[, tested := ifelse(is.na(s_agreement) == FALSE, 'Tested', 'Not Tested Yet')]
+
+# Build Plot Title.
+start <- str_locate(filename, "List_")[2]+1
+stop <- str_locate(filename, ".xlsx")[1]-1
+date <- str_replace_all(substr(filename, start, stop), "_", "/")
+# title <- paste(data[,table(tested)][2], " Participants Tested, ", data[,table(tested)][1], " More To Go As Of ", date, sep="")
+```
+
+## `r data[,table(tested)][2]` Participants Tested, `r data[,table(tested)][1]` More To Go As Of `r date`.
+
+
+```{r check azzignment ratios, warning=FALSE, echo=FALSE}
+# Get data.table of number of participants azzigned to control/treatment by `tested`.
+melted_azzignment_data <- data.table(melt(data[, table(tested, by=(azzignment))], id=c("tested")))
+
+# Build title.
+azzignment_title = paste(data[, round(mean(azzignment=='treatment'),2)*100], '% of all participants assigned to Treatment.', sep='')
+
+# Build Plot.
+ggplot(melted_azzignment_data, aes(fill=by, y=value, x=tested)) + 
+  geom_bar(position="stack", stat="identity") +
+  ggtitle(azzignment_title) +
+  xlab("Participant Status") + ylab("Number of Participants") + 
+  labs(fill='Assignment') +
+  ylim(0, 50)
+```
+```{r check first olive oil 1 vs 2 ratios, warning=FALSE, echo=FALSE}
+# Get data.table of number of participants azzigned to taste OO #1 or OO #2 first by `tested`.
+melted_first_oo_data <- data.table(melt(data[, table(tested, by=(first_oo))], id=c("tested")))
+
+# Build title.
+first_oo_title = paste(data[, round(mean(first_oo==0),2)*100], '% of all participants assigned to smell and sip olive oil #1 first.', sep='')
+
+# Build Plot.
+ggplot(melted_first_oo_data, aes(fill=as.factor(by), y=value, x=tested)) + 
+  geom_bar(position="stack", stat="identity") +
+  ggtitle(first_oo_title) +
+  xlab("Participant Status") + ylab("Number of Participants") + 
+  scale_fill_discrete(name = "First Olive Oil", labels = c("#1", "#2")) +
+  ylim(0, 50)
+```
+
+
+```{r import pre experiment survey data, echo=FALSE}
+filename <- "CLEAN 3.16.22Pre Experiment Survey - Olive Oil Taste Test (Responses).xlsx"
+
+data <- read_excel(paste("../", filename, sep=""), skip = 0, col_names = TRUE)
+data <- data.table(data)
+```
+```{r check country_of_birth ratios, warning=FALSE, echo=FALSE}
+# Get data.table of number of participants azzigned to control/treatment by `country_of_birth`.
+melted_country_of_birth_data <- data.table(melt(data[, table(country_of_birth, by=(azzignment))], id=c("country_of_birth")))
+
+# Build title.
+country_of_birth_title = "Covariate Check on Country of Birth"
+
+# Build Plot.
+ggplot(melted_country_of_birth_data, aes(fill=by, y=value, x=country_of_birth)) + 
+  geom_bar(position="stack", stat="identity") +
+  ggtitle(country_of_birth_title) +
+  xlab("Country of Birth") + ylab("Number of Participants") + 
+  labs(fill='Assignment') +
+  ylim(0, 30)
+```
+
+```{r check age ratios, warning=FALSE, echo=FALSE}
+# Get data.table of number of participants azzigned to control/treatment by `covid`.
+melted_age_data <- data.table(melt(data[, table(age, by=(azzignment))], id=c("age")))
+
+# Build title.
+age_title = "Covariate Check on Age Range"
+
+# Build Plot.
+ggplot(melted_age_data, aes(fill=by, y=value, x=age)) + 
+  geom_bar(position="stack", stat="identity") +
+  ggtitle(age_title) +
+  xlab("Participant Age") + ylab("Number of Participants") + 
+  labs(fill='Assignment') +
+  ylim(0, 25)
+```
+
+```{r check covid ratios, warning=FALSE, echo=FALSE}
+# Get data.table of number of participants azzigned to control/treatment by `covid`.
+melted_covid_data <- data.table(melt(data[, table(covid, by=(azzignment))], id=c("covid")))
+
+# Build title.
+covid_title = "Covariate Check on Covid"
+
+# Build Plot.
+ggplot(melted_covid_data, aes(fill=by, y=value, x=covid)) + 
+  geom_bar(position="stack", stat="identity") +
+  ggtitle(covid_title) +
+  xlab("Participant Covid Status") + ylab("Number of Participants") + 
+  labs(fill='Assignment') +
+  ylim(0, 40)
+```
+```{r check no of previous olive oil tastings ratios, warning=FALSE, echo=FALSE}
+# Get data.table of number of participants azzigned to control/treatment by `oo_count`.
+melted_oo_count_data <- data.table(melt(data[, table(oo_count, by=(azzignment))], id=c("oo_count")))
+
+# Build title.
+oo_count_title = "Covariate Check on Number of Times Tasted Olive Oil"
+
+# Build Plot.
+ggplot(melted_oo_count_data, aes(fill=by, y=value, x=oo_count)) + 
+  geom_bar(position="stack", stat="identity") +
+  ggtitle(oo_count_title) +
+  xlab("# of Previous Olive Oil Tastings") + ylab("Number of Participants") + 
+  labs(fill='Assignment') +
+  ylim(0, 50)
+```
+
