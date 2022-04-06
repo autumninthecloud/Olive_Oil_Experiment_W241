@@ -1,0 +1,229 @@
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(stargazer)
+library(nnet)
+```
+
+
+
+```{r}
+data <- read_excel("~/w241/Olive_Oil_Taste_Test/data/final_data/manually_cleaned_data.xlsx")
+```
+
+```{r}
+summary(data)
+```
+
+```{r}
+df<-data %>% 
+  filter(!is.na(better_smell)) %>%
+  mutate(country_of_birth=ifelse(birth_country != 'USA' & birth_country != 'Turkey' , 'Other', birth_country),
+         covid=ifelse(covid=='Yes',1,0),
+         num_oo_tastings=tasting_count,
+         better_smell=ifelse(better_smell=='1','Olive_oil_1',
+                             ifelse(better_smell =='2','Olive_oil_2','Neither')),
+         more_bitter=ifelse(more_bitter=='1','Olive_oil_1',
+                             ifelse(more_bitter =='2','Olive_oil_2','Neither')))
+  
+```
+
+```{r}
+#model 1
+model1<-lm(better_taste ~ azzignment + first_oo + azzignment*first_oo, data=df)
+ stargazer(
+  model1,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model1))))
+ )
+```
+
+```{r}
+#model 2
+model2a<-lm(better_taste ~ azzignment + first_oo + azzignment*first_oo + covid, data=df)
+model2b<-lm(better_taste ~ azzignment + first_oo + azzignment*first_oo + num_oo_tastings, data=df)
+model2c<-lm(better_taste ~ azzignment + first_oo + azzignment*first_oo + covid+ num_oo_tastings, data=df)
+ stargazer(
+  model2a,model2b,model2c,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model2a))),sqrt(diag(vcovHC(model2b))),sqrt(diag(vcovHC(model2c))))
+ )
+```
+
+```{r}
+#model 2
+model2d<-lm(better_taste ~ azzignment + first_oo + azzignment*first_oo + better_smell, data=df)
+model2e<-lm(better_taste ~ azzignment + first_oo + azzignment*first_oo + more_bitter, data=df)
+model2f<-lm(better_taste ~ azzignment + first_oo + azzignment*first_oo + better_smell+ more_bitter, data=df)
+ stargazer(
+  model2d,model2e,model2f,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model2d))),sqrt(diag(vcovHC(model2e))),sqrt(diag(vcovHC(model2f))))
+ )
+```
+
+```{r}
+#model 2
+model2g<-lm(better_taste ~ azzignment + first_oo + azzignment*first_oo + covid +better_smell, data=df)
+model2h<-lm(better_taste ~ azzignment + first_oo + azzignment*first_oo + num_oo_tastings, data=df)
+model2i<-lm(better_taste ~ azzignment + first_oo + azzignment*first_oo + covid+ num_oo_tastings, data=df)
+ stargazer(
+  model2g,model2h,model2i,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model2g))),sqrt(diag(vcovHC(model2h))),sqrt(diag(vcovHC(model2i))))
+ )
+```
+
+
+```{r}
+model3<-multinom(as.factor(better_smell) ~ azzignment + first_oo + azzignment*first_oo, data=df)
+summary(model3)
+```
+```{r}
+#model 3
+model3<-lm(better_smell ~ azzignment + first_oo + azzignment*first_oo, 
+             data=df %>%
+              filter(better_smell !='Neither')%>%
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
+ stargazer(
+  model3,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model3))))
+ )
+```
+
+```{r}
+#model 4
+model4<-lm(more_bitter ~ azzignment + first_oo + azzignment*first_oo, 
+             data=df %>%
+              filter(more_bitter !='Neither')%>%
+              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
+ stargazer(
+  model4,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model4))))
+ )
+```
+
+```{r}
+model5a<-lm(better_taste ~ azzignment + first_oo + covid+azzignment*first_oo + azzignment*covid+ first_oo*covid, data=df)
+ stargazer(
+  model5a,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model5a))))
+ )
+```
+
+```{r}
+model5b<-lm(better_smell~ azzignment + first_oo + covid+azzignment*first_oo + azzignment*covid+ first_oo*covid, 
+            data=df %>%
+              filter(better_smell !='Neither')%>%
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
+ stargazer(
+  model5b,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model5b))))
+ )
+```
+
+
+```{r}
+#model 6
+model6<-lm(better_taste ~ azzignment + first_oo + country_of_birth+ azzignment*first_oo + azzignment*country_of_birth + first_oo*country_of_birth, data=df)
+ stargazer(
+  model6,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model6))))
+ )
+```
+
+
+```{r}
+#model7
+model7a<-lm(better_taste ~ azzignment + first_oo +age+azzignment*first_oo + azzignment*age+ first_oo*age, data=df)
+#model5b<-lm(better_smell~ azzignment + first_oo + covid+azzignment*first_oo + azzignment*covid+ first_oo*covid, data=df)
+ stargazer(
+  model7a,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model7a))))
+ )
+```
+
+
+```{r}
+#model7
+model8a<-lm(better_taste ~ azzignment + first_oo +age+azzignment*age + first_oo*age, data=df)
+model8b<-lm(better_taste ~ azzignment + first_oo +country_of_birth+azzignment*country_of_birth + first_oo*country_of_birth , data=df)
+model8c<-lm(better_taste ~ azzignment + first_oo +age+azzignment*age + first_oo*age + country_of_birth+azzignment*country_of_birth + first_oo*country_of_birth , data=df)
+ stargazer(
+  model8a,model8b, model8c,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model8a))),sqrt(diag(vcovHC(model8b))),sqrt(diag(vcovHC(model8c))))
+ )
+```
+
+
+```{r}
+#model9
+model9a<-lm(better_taste ~ azzignment + first_oo +covid+num_oo_tastings+age+country_of_birth, data=df)
+model9b<-lm(better_taste ~ azzignment + first_oo +covid+num_oo_tastings+country_of_birth+better_smell,
+            data=df %>%
+              filter(better_smell !='Neither')%>%
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
+model9c<-lm(better_taste ~ azzignment + first_oo +covid+num_oo_tastings+age+better_smell,
+              data=df %>%
+              filter(better_smell !='Neither')%>%
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
+model9d<-lm(better_taste ~ azzignment + first_oo +age+country_of_birth, data=df)
+ stargazer(
+  model9a,model9b, model9c,model8d,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model9a))),sqrt(diag(vcovHC(model9b))),sqrt(diag(vcovHC(model9c))),sqrt(diag(vcovHC(model8d))))
+ )
+```
+
+
+```{r}
+#model10
+
+model10a<-lm(better_smell~ azzignment + first_oo +age+azzignment*age + first_oo*age, 
+             data=df %>%
+              filter(better_smell !='Neither')%>%
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
+model10b<-lm(better_smell ~ azzignment + first_oo +country_of_birth+azzignment*country_of_birth + first_oo*country_of_birth ,
+            data=df %>%
+              filter(better_smell !='Neither')%>%
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
+model10c<-lm(better_smell ~ azzignment + first_oo +age+azzignment*age + first_oo*age + country_of_birth+azzignment*country_of_birth + first_oo*country_of_birth ,
+              data=df %>%
+              filter(better_smell !='Neither')%>%
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
+ stargazer(
+  model10a,model10b, model10c,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model10a))),sqrt(diag(vcovHC(model10b))),sqrt(diag(vcovHC(model10c))))
+ )
+```
+
+```{r}
+#model10
+
+model11a<-lm(more_bitter~ azzignment + first_oo +age+azzignment*age + first_oo*age, 
+             data=df %>%
+              filter(more_bitter !='Neither')%>%
+              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
+model11b<-lm(more_bitter ~ azzignment + first_oo +country_of_birth+azzignment*country_of_birth + first_oo*country_of_birth ,
+             data=df %>%
+              filter(more_bitter !='Neither')%>%
+              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
+model11c<-lm(more_bitter ~ azzignment + first_oo +age+azzignment*age + first_oo*age + country_of_birth+azzignment*country_of_birth + first_oo*country_of_birth ,
+              data=df %>%
+              filter(more_bitter !='Neither')%>%
+              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
+ stargazer(
+  model11a,model11b, model11c,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model11a))),sqrt(diag(vcovHC(model11b))),sqrt(diag(vcovHC(model11c))))
+ )
+```
