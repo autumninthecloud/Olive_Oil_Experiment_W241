@@ -36,14 +36,15 @@ df<-data %>%
 #Causal model
 model1<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil, data=df)
 model2<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings , data=df)
-model5<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings  + azzignment*covid + second_olive_oil*covid, data=df)
-model6<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + country_of_birth+ azzignment*country_of_birth + second_olive_oil*country_of_birth, data=df)
-model7<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + age+ azzignment*age+ second_olive_oil*age, data=df)
+model3<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings+ azzignment*covid + second_olive_oil*covid+ azzignment*num_oo_tastings+ second_olive_oil*num_oo_tastings, data=df)
+model5<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + country_of_birth+ azzignment*country_of_birth + second_olive_oil*country_of_birth, data=df)
+model6<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + age+ azzignment*age+ second_olive_oil*age, data=df)
+model7<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + sex+ azzignment*sex+ second_olive_oil*sex, data=df)
 
  stargazer(
-  model1, model2,model5,model6, model7,
+  model1, model2,model3, model5,model6, model7,
    type = 'text',
-  se=list(sqrt(diag(vcovHC(model1))),sqrt(diag(vcovHC(model2))),sqrt(diag(vcovHC(model5))),sqrt(diag(vcovHC(model6))),sqrt(diag(vcovHC(model7))))
+  se=list(sqrt(diag(vcovHC(model1))),sqrt(diag(vcovHC(model2))),sqrt(diag(vcovHC(model3))),sqrt(diag(vcovHC(model5))),sqrt(diag(vcovHC(model6))),sqrt(diag(vcovHC(model7))))
  )
 ```
 
