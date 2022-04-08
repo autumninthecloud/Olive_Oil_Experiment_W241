@@ -4,6 +4,7 @@ library(dplyr)
 library(ggplot2)
 library(stargazer)
 library(nnet)
+library(sandwich)
 ```
 
 
@@ -21,39 +22,50 @@ df<-data %>%
   filter(!is.na(better_smell)) %>%
   mutate(country_of_birth=ifelse(birth_country != 'USA' & birth_country != 'Turkey' , 'Other', birth_country),
          covid=ifelse(covid=='Yes',1,0),
-         num_oo_tastings=tasting_count,
+         num_oo_tastings=ifelse(tasting_count==0, 0,1),
          better_smell=ifelse(better_smell=='1','Olive_oil_1',
                              ifelse(better_smell =='2','Olive_oil_2','Neither')),
          more_bitter=ifelse(more_bitter=='1','Olive_oil_1',
                              ifelse(more_bitter =='2','Olive_oil_2','Neither')),
-         preferred_oil=better_taste,
+         preferred_olive_oil_2=ifelse(better_taste ==2,1,0),
          second_olive_oil=first_oo)
-  
+olive_oil2_df<-df%>%filter(second_olive_oil==1)
+olive_oil1_df<-df%>%filter(second_olive_oil==0)
 ```
 
 
 ```{r}
-#Causal model
-model1<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil, data=df)
-model2<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings , data=df)
-model3<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings+ azzignment*covid + second_olive_oil*covid+ azzignment*num_oo_tastings+ second_olive_oil*num_oo_tastings, data=df)
-model5<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + country_of_birth+ azzignment*country_of_birth + second_olive_oil*country_of_birth, data=df)
-model6<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + age+ azzignment*age+ second_olive_oil*age, data=df)
-model7<-lm(preferred_oil ~ azzignment + second_olive_oil + azzignment*second_olive_oil + sex+ azzignment*sex+ second_olive_oil*sex, data=df)
-
- stargazer(
-  model1, model2,model3, model5,model6, model7,
-   type = 'text',
-  se=list(sqrt(diag(vcovHC(model1))),sqrt(diag(vcovHC(model2))),sqrt(diag(vcovHC(model3))),sqrt(diag(vcovHC(model5))),sqrt(diag(vcovHC(model6))),sqrt(diag(vcovHC(model7))))
- )
+table(df$num_oo_tastings)
 ```
 
+```{r}
+#Causal model #Subgroup analysis olive oil #2
+model1a<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil, data=olive_oil2_df)
+model2a<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings, data=olive_oil2_df)
+model3a<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid +num_oo_tastings + azzignment*covid + second_olive_oil*covid+ azzignment*num_oo_tastings+ second_olive_oil*num_oo_tastings, data=olive_oil2_df)
 
+ stargazer(
+  model1a, model2a,model3a,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model1a))),sqrt(diag(vcovHC(model2a))),sqrt(diag(vcovHC(model3a))))
+ )
+```
+```{r}
+#Causal model
+model1b<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil, data=olive_oil1_df)
+model2b<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings, data=olive_oil1_df)
+model3b<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings+ azzignment*covid + second_olive_oil*covid+ azzignment*num_oo_tastings+ second_olive_oil*num_oo_tastings, data=olive_oil1_df)
 
+ stargazer(
+  model1b, model2b,model3b,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model1b))),sqrt(diag(vcovHC(model2b))),sqrt(diag(vcovHC(model3b))))
+ )
+```
 ```{r}
 #Descriptive model
 model3<-lm(better_smell ~ azzignment + second_olive_oil + azzignment*second_olive_oil, 
-             data=df %>%
+             data=olive_oil2_df %>%
               filter(better_smell !='Neither')%>%
               mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
  stargazer(
@@ -62,14 +74,38 @@ model3<-lm(better_smell ~ azzignment + second_olive_oil + azzignment*second_oliv
   se=list(sqrt(diag(vcovHC(model3))))
  )
 
-#descriptive model 
-model4<-lm(more_bitter ~ azzignment + second_olive_oil + azzignment*second_olive_oil, 
-             data=df %>%
-              filter(more_bitter !='Neither')%>%
-              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
+ model4<-lm(better_smell ~ azzignment + second_olive_oil + azzignment*second_olive_oil, 
+             data=olive_oil1_df %>%
+              filter(better_smell !='Neither')%>%
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
  stargazer(
   model4,
    type = 'text',
   se=list(sqrt(diag(vcovHC(model4))))
+ )
+```
+
+
+```{r}
+
+#descriptive model 
+model5<-lm(more_bitter ~ azzignment + second_olive_oil + azzignment*second_olive_oil, 
+             data=olive_oil2_df %>%
+              filter(more_bitter !='Neither')%>%
+              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
+ stargazer(
+  model5,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model5))))
+ )
+ 
+ model6<-lm(more_bitter ~ azzignment + second_olive_oil + azzignment*second_olive_oil, 
+             data=olive_oil1_df %>%
+              filter(more_bitter !='Neither')%>%
+              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
+ stargazer(
+  model6,
+   type = 'text',
+  se=list(sqrt(diag(vcovHC(model6))))
  )
 ```
