@@ -5,6 +5,8 @@ library(ggplot2)
 library(stargazer)
 library(nnet)
 library(sandwich)
+library(MatchIt)
+library(cobalt)
 ```
 
 
@@ -35,8 +37,66 @@ olive_oil1_df<-df%>%filter(second_olive_oil==0)
 
 
 ```{r}
-table(df$num_oo_tastings)
+
+# Nearest neighbor matching with MatchIt
+m.out <- matchit(preferred_olive_oil_2~ country_of_birth + sex +age +covid+num_oo_tastings, data = df)
+# Checking balance before and after matching:
+bal.tab(m.out, thresholds = c(m = 0.1), un = TRUE)
+
 ```
+
+```{r}
+library(ggplot2)
+```
+
+
+```{r}
+#Causal model #Subgroup analysis olive oil #2
+model1<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil, data=df)
+model2<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings, data=df)
+model3<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings+ azzignment*covid + azzignment*num_oo_tastings + second_olive_oil*covid + second_olive_oil*num_oo_tastings, data=df)
+
+ stargazer(
+  model1, model2,model3,
+   type = 'text',
+   covariate.labels=c('Received positive messaging on olive oil 2', 'Received second olive oil first', 'Had covid', 'Has olive oil tasting experience',
+                      'Received positive messaging on olive oil 2 : Received Second Olive Oil First', 'Received positive messaging on olive oil 2: Had covid', 
+                      'Received positive messaging on olive oil 2 : Has olive oil tasting experience','Received Second Olive Oil First: Had covid',
+                      'Received Second Olive Oil First: Has olive oil tasting experience'),
+  dep.var.labels='Preferred to Take Home Olive Oil 2',
+  se=list(sqrt(diag(vcovHC(model1))),sqrt(diag(vcovHC(model2))),sqrt(diag(vcovHC(model3)))))
+
+```
+
+
+```{r}
+#Descriptive model
+model3<-lm(better_smell ~ azzignment +second_olive_oil+covid +num_oo_tastings, 
+             data= df %>%
+              filter(better_smell !='Neither')%>%
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
+ stargazer(
+  model3,
+   type = 'text',
+    covariate.labels=c('Received positive messaging on olive oil 2', 'Received Second Olive Oil First','Had covid', 'Has olive oil tasting experience'),
+  dep.var.labels='Preferred Smell of Olive Oil 2',
+  se=list(sqrt(diag(vcovHC(model3))))
+ )
+
+ model4<-lm(more_bitter ~ azzignment +second_olive_oil+covid +num_oo_tastings,
+             data=df %>%
+              filter(more_bitter !='Neither')%>%
+              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
+ stargazer(
+  model4,
+   type = 'text',
+      covariate.labels=c('Received positive messaging on olive oil 2', 'Received Second Olive Oil First', 'Had covid', 'Has olive oil tasting experience'),
+  dep.var.labels='Found Olive Oil 2 more bitter',
+  se=list(sqrt(diag(vcovHC(model4))))
+ )
+```
+
+
 
 ```{r}
 #Causal model #Subgroup analysis olive oil #2
@@ -47,18 +107,22 @@ model3a<-lm(preferred_olive_oil_2 ~ azzignment  + covid +num_oo_tastings + azzig
  stargazer(
   model1a, model2a,model3a,
    type = 'text',
+  covariate.labels=c('Received positive messaging on olive oil 2', 'Had covid', 'Has olive oil tasting experience','Received positive messaging on olive oil 2: Had covid', 'Received positive messaging on olive oil 2 : Has olive oil tasting experience'),
+  dep.var.labels='Preferred to Take Home Olive Oil 2',
   se=list(sqrt(diag(vcovHC(model1a))),sqrt(diag(vcovHC(model2a))),sqrt(diag(vcovHC(model3a))))
  )
 ```
 ```{r}
 #Causal model
-model1b<-lm(preferred_olive_oil_2 ~ azzignment, data=olive_oil1_df)
+model1b<-lm(preferred_olive_oil_2 ~ azzignment,  data=olive_oil1_df)
 model2b<-lm(preferred_olive_oil_2 ~ azzignment  + covid + num_oo_tastings, data=olive_oil1_df)
 model3b<-lm(preferred_olive_oil_2 ~ azzignment + covid + num_oo_tastings+ azzignment*covid +  azzignment*num_oo_tastings, data=olive_oil1_df)
 
  stargazer(
   model1b, model2b,model3b,
    type = 'text',
+  covariate.labels=c('Received positive messaging on olive oil 2', 'Had covid', 'Has olive oil tasting experience','Received positive messaging on olive oil 2: Had covid', 'Received positive messaging on olive oil 2 : Has olive oil tasting experience'),
+  dep.var.labels='Preferred to Take Home Olive Oil 2',
   se=list(sqrt(diag(vcovHC(model1b))),sqrt(diag(vcovHC(model2b))),sqrt(diag(vcovHC(model3b))))
  )
 ```
@@ -71,6 +135,8 @@ model3<-lm(better_smell ~ azzignment +covid +num_oo_tastings,
  stargazer(
   model3,
    type = 'text',
+    covariate.labels=c('Received positive messaging on olive oil 2', 'Had covid', 'Has olive oil tasting experience'),
+  dep.var.labels='Preferred Smell of Olive Oil 2',
   se=list(sqrt(diag(vcovHC(model3))))
  )
 
@@ -81,6 +147,8 @@ model3<-lm(better_smell ~ azzignment +covid +num_oo_tastings,
  stargazer(
   model4,
    type = 'text',
+      covariate.labels=c('Received positive messaging on olive oil 2', 'Had covid', 'Has olive oil tasting experience'),
+  dep.var.labels='Preferred Smell of Olive Oil 2',
   se=list(sqrt(diag(vcovHC(model4))))
  )
 ```
