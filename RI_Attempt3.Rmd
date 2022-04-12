@@ -1,0 +1,201 @@
+---
+title: "RI attempt"
+output: html_document
+date: '2022-04-11'
+---
+
+```{r setup, include=FALSE}
+library(data.table)
+library(ggplot2)
+library(dplyr)
+library(sandwich)
+library(lmtest)
+library(readxl)
+library(AER) 
+library(reshape)
+library(ggplot2) 
+library(patchwork)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r import data, echo=FALSE}
+filename <- "./data/final_data/de-identified_data.xlsx"
+
+data <- data.table(read_excel(filename, 
+                   sheet = 'All', skip = 0, col_names = TRUE))
+```
+
+```{r Data Cleanup, echo=FALSE}
+# Removing unnecessary columns
+data[,c("admin","s_agreement", "agree_to_taste"):=NULL]
+
+# Add `tested` variable, Tested if better_taste != NaN.
+# 1 = Tested, 0 = Not tested yet
+data[, tested := ifelse(is.na(better_taste) == FALSE, 1, 0)]
+
+# 1 if participant tasted olive oil more than once prior to experiment, 0 otherwise
+data[, tasting_count := ifelse(tasting_count >= 2, 1, 0)]
+
+# 1 if participant tested positive for covid in the past two years, 0 otherwise
+data[, covid := ifelse(covid == "Yes", 1, 0)]
+
+# 1 if participant azzigned to treatment, 0 otherwise
+data[, azzignment := ifelse(azzignment == "treatment", 1, 0)]
+
+# 1 if participant said oo 2 had a better smell, 0 if participant said oo 1 had a better smell, NA if same
+#data[, better_smell := ifelse(better_smell > 1, 1, 0, na=TRUE)]
+data[, better_smell := ifelse(better_smell==2, 1, ifelse(better_smell==1, 0, NaN))]
+data[, more_bitter := ifelse(more_bitter==2, 1, ifelse(more_bitter==1, 0, NaN))]
+data[, better_taste := ifelse(better_taste==2, 1, ifelse(better_taste==1, 0, NaN))]
+```
+
+
+```{r Convert binary categoricals to full on binary, echo=FALSE}
+d <- data[(tested==1), ][, c('id', 'azzignment', 'first_oo', 'better_taste')]
+d
+```
+
+```{r simple models}
+print('Without interaction term')
+simple2 <- d[, lm(better_taste ~ azzignment)]
+simple2_mod <- coeftest(simple2,vcovHC(simple2))
+simple2_mod
+
+print('Without interaction term')
+simple2 <- d[, lm(better_taste ~ first_oo)]
+simple2_mod <- coeftest(simple2,vcovHC(simple2))
+simple2_mod
+
+print('Without interaction term')
+simple <- d[, lm(better_taste ~ azzignment + first_oo)]
+simple_mod <- coeftest(simple,vcovHC(simple))
+simple_mod
+
+print('With interaction term')
+simple2 <- d[, lm(better_taste ~ azzignment + first_oo + azzignment* first_oo)]
+simple2_mod <- coeftest(simple2,vcovHC(simple2))
+simple2_mod
+
+```
+
+```{r simple ATEs}
+real_T_ATE <- d[, mean(better_taste), by=azzignment][, diff(V1)]
+real_T_ATE
+real_ATE2 <- d[, mean(better_taste), by=first_oo][, diff(V1)]
+real_ATE2
+d[, both_treats := ifelse((azzignment==1) & (first_oo==1), 1, 0)]
+real_T_ATE2 <- d[, mean(better_taste), by=both_treats][, diff(V1)]
+real_T_ATE2
+```
+
+
+```{r}
+get_ates <- function(this_data) {
+  T_ATE <- this_data[, mean(better_taste), by=azzignment][, diff(V1)]
+  ATE2 <- this_data[, mean(better_taste), by=first_oo][, diff(V1)]
+  this_data[, both_treats := ifelse((azzignment==1) & (first_oo==1), 1, 0)]
+  T_ATE2 <- this_data[, mean(better_taste), by=both_treats][, diff(V1)]
+
+  ates <- c(T_ATE, 
+            ATE2, 
+            T_ATE2)
+  ates <- data.table(t(ates))
+  colnames(ates) <- c('T1', 'C2', 'T2')
+  return(ates)
+}
+```
+
+
+```{r}
+randomize <- function(this_data) {
+  # Complete randomization on treatment and control
+  rand_assignment_vec <- sample(rep(c(0, 1), each=ceiling(nrow(this_data)/2)))
+  if (nrow(this_data) < length(rand_assignment_vec)) {
+    rand_assignment_vec <- rand_assignment_vec[-2]}
+  this_data[ , azzignment := rand_assignment_vec]
+  
+  # Binary randomization on first_oo
+  rand_assignment_vec <- rbinom(n=nrow(this_data), size=1, prob=0.5)
+  this_data[ , first_oo := rand_assignment_vec]
+  return(this_data)
+}
+```
+
+
+```{r}
+ri <- function(this_data, all_ates, simulations = 5000) {
+  for(sim in 1:simulations) { 
+    random_data <- randomize(this_data)
+    all_ates <- rbind(all_ates, get_ates(random_data))
+  }
+  return(all_ates)
+}
+all_ates <- data.table(T1=numeric(), C2=numeric(), T2=numeric())
+all_ates <- ri(d, all_ates, simulations=5000)
+```
+
+
+```{r}
+build_hist <- function(ate_vec, real_ate, plot_title) {
+  # Calculate the 2.5% and 97.5% quantiles.
+  alt_quantiles <- quantile(ate_vec, probs = c(.025, .975)) # there's a built-in to pull these. 
+
+  ggplot() + aes(ate_vec) + 
+  geom_histogram(binwidth = .05, fill="purple") +
+  labs(
+    title = plot_title,
+    x = expression("Random Inference ATEs"), 
+    y = "Count of Observations") +
+  xlim(-.5, .5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 10.5)) + 
+  theme(axis.title = element_text(size = 10)) +
+  geom_vline(aes(xintercept = mean(ate_vec)), color="black",  size=.5) + 
+  geom_vline(aes(xintercept = real_ate), color="red",  size=.5) +
+  geom_vline(aes(xintercept = alt_quantiles[1]), color="blue",  size=.5) +
+  geom_vline(aes(xintercept = alt_quantiles[2]), color="blue",  size=.5)
+}
+
+# Calculate the p-value of the estimated ATE under the sharp null hypothesis.
+T_ATE_p_value <- mean(abs(all_ates[, T1]) > abs(real_T_ATE))
+nice_T_ATE_p_value <- format(T_ATE_p_value, digit=2)
+nice_real_T_ATE <- format(real_T_ATE, digit=2)
+plot_title <- paste("Positive Messaging ATE is ", nice_real_T_ATE, " with an RI p-value of ", nice_T_ATE_p_value, ".\nWe fail to reject the null hypothesis that positive messaging does not make a product taste better.", sep="")
+
+build_hist(all_ates[, T1], real_T_ATE, plot_title)
+
+```
+
+```{r}
+# Calculate the p-value of the estimated ATE under the sharp null hypothesis.
+ATE2_p_value <- mean(abs(all_ates[, C2]) > abs(real_ATE2))
+
+# Build a nice plot title.
+nice_ATE2_p_value <- format(ATE2_p_value, digit=2)
+nice_real_ATE2 <- format(real_ATE2, digit=2)
+plot_title <- paste("The ATE of tasting Olive Oil #2 first is ", nice_real_ATE2, " with an RI p-value of ", nice_ATE2_p_value, ".\nWe fail to reject the null hypothesis that tasting a product first does not make that product\ntaste better.", sep="")
+
+# Build plot.
+build_hist(all_ates[, (C2)], real_ATE2, plot_title)
+
+```
+
+```{r}
+# Calculate the p-value of the estimated ATE under the sharp null hypothesis.
+T_ATE2_p_value <- mean(abs(all_ates[, T2]) > abs(real_T_ATE2))
+
+# Build a nice plot title.
+nice_T_ATE2_p_value <- format(T_ATE2_p_value, digit=2)
+nice_real_T_ATE2 <- format(real_T_ATE2, digit=2)
+plot_title <- paste("The ATE of positive messaging and tasting Olive Oil #2 first is ", nice_real_T_ATE2, " with an RI p-value of ", nice_T_ATE2_p_value, ".\nWe fail to reject the null hypothesis that hearing a positive message and tasting a product\nfirst does not make that product taste better.", sep="")
+
+# Build plot.
+build_hist(all_ates[, (T2)], real_T_ATE2, plot_title)
+d[, lm(better_taste ~ azzignment*first_oo)]
+```
+
+
+
+
+
