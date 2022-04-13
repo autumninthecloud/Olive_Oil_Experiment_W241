@@ -15,9 +15,6 @@ library(cobalt)
 data <- read_excel("~/w241/Olive_Oil_Taste_Test/data/final_data/manually_cleaned_data.xlsx")
 ```
 
-```{r}
-summary(data)
-```
 
 ```{r}
 df<-data %>% 
@@ -30,42 +27,47 @@ df<-data %>%
          more_bitter=ifelse(more_bitter=='1','Olive_oil_1',
                              ifelse(more_bitter =='2','Olive_oil_2','Neither')),
          preferred_olive_oil_2=ifelse(better_taste ==2,1,0),
-         second_olive_oil=first_oo)
+         second_olive_oil=first_oo,
+         treatment=ifelse(azzignment =='treatment',1,0))
 olive_oil2_df<-df%>%filter(second_olive_oil==1)
 olive_oil1_df<-df%>%filter(second_olive_oil==0)
 ```
 
+```{r}
+table(df$second_olive_oil)
+table(df$azzignment)
+table(df$treatment)
+```
 
 ```{r}
 
 # Nearest neighbor matching with MatchIt
-m.out <- matchit(preferred_olive_oil_2~ country_of_birth + sex +age +covid+num_oo_tastings, data = df)
+m.out <- matchit(treatment ~ country_of_birth + sex +age +covid+num_oo_tastings, data = df)
 # Checking balance before and after matching:
 bal.tab(m.out, thresholds = c(m = 0.1), un = TRUE)
+bal.plot(m.out, var.name = "covid")
+bal.plot(m.out, var.name = "age")
+bal.plot(m.out, var.name = "second_olive_oil")
 
-```
-
-```{r}
-library(ggplot2)
 ```
 
 
 ```{r}
 #Causal model #Subgroup analysis olive oil #2
-model1<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil, data=df)
-model2<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings, data=df)
-model3<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings+ azzignment*covid + azzignment*num_oo_tastings + second_olive_oil*covid + second_olive_oil*num_oo_tastings, data=df)
+model1<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil, data=df)
+model2<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil, data=df)
+model3<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings, data=df)
+model4-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings + azzignment*covid + azzignment*num_oo_tastings + second_olive_oil*covid + second_olive_oil*num_oo_tastings, data=df)
 
  stargazer(
-  model1, model2,model3,
+  model1, model2,model3,model4,
    type = 'text',
    covariate.labels=c('Received positive messaging on olive oil 2', 'Received second olive oil first', 'Had covid', 'Has olive oil tasting experience',
                       'Received positive messaging on olive oil 2 : Received Second Olive Oil First', 'Received positive messaging on olive oil 2: Had covid', 
                       'Received positive messaging on olive oil 2 : Has olive oil tasting experience','Received Second Olive Oil First: Had covid',
                       'Received Second Olive Oil First: Has olive oil tasting experience'),
   dep.var.labels='Preferred to Take Home Olive Oil 2',
-  se=list(sqrt(diag(vcovHC(model1))),sqrt(diag(vcovHC(model2))),sqrt(diag(vcovHC(model3)))))
-
+  se=list(sqrt(diag(vcovHC(model1))),sqrt(diag(vcovHC(model2))),sqrt(diag(vcovHC(model3))),sqrt(diag(vcovHC(model4)))))
 ```
 
 
