@@ -39,17 +39,6 @@ table(df$azzignment)
 table(df$treatment)
 ```
 
-```{r}
-
-# Nearest neighbor matching with MatchIt
-m.out <- matchit(treatment ~ country_of_birth + sex +age +covid+num_oo_tastings, data = df)
-# Checking balance before and after matching:
-bal.tab(m.out, thresholds = c(m = 0.1), un = TRUE)
-bal.plot(m.out, var.name = "covid")
-bal.plot(m.out, var.name = "age")
-bal.plot(m.out, var.name = "second_olive_oil")
-
-```
 
 
 ```{r}
@@ -57,7 +46,7 @@ bal.plot(m.out, var.name = "second_olive_oil")
 model1<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil, data=df)
 model2<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil, data=df)
 model3<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings, data=df)
-model4-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings + azzignment*covid + azzignment*num_oo_tastings + second_olive_oil*covid + second_olive_oil*num_oo_tastings, data=df)
+model4<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings + azzignment*covid + azzignment*num_oo_tastings + second_olive_oil*covid + second_olive_oil*num_oo_tastings, data=df)
 
  stargazer(
   model1, model2,model3,model4,
@@ -68,138 +57,49 @@ model4-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*sec
                       'Received Second Olive Oil First: Has olive oil tasting experience'),
   dep.var.labels='Preferred to Take Home Olive Oil 2',
   se=list(sqrt(diag(vcovHC(model1))),sqrt(diag(vcovHC(model2))),sqrt(diag(vcovHC(model3))),sqrt(diag(vcovHC(model4)))))
+ 
 ```
 
 
 ```{r}
-#Descriptive model
-model3<-lm(better_smell ~ azzignment +second_olive_oil+covid +num_oo_tastings, 
-             data= df %>%
-              filter(better_smell !='Neither')%>%
-              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
- stargazer(
-  model3,
-   type = 'text',
-    covariate.labels=c('Received positive messaging on olive oil 2', 'Received Second Olive Oil First','Had covid', 'Has olive oil tasting experience'),
-  dep.var.labels='Preferred Smell of Olive Oil 2',
-  se=list(sqrt(diag(vcovHC(model3))))
- )
-
- model4<-lm(more_bitter ~ azzignment +second_olive_oil+covid +num_oo_tastings,
-             data=df %>%
-              filter(more_bitter !='Neither')%>%
-              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
- stargazer(
-  model4,
-   type = 'text',
-      covariate.labels=c('Received positive messaging on olive oil 2', 'Received Second Olive Oil First', 'Had covid', 'Has olive oil tasting experience'),
-  dep.var.labels='Found Olive Oil 2 more bitter',
-  se=list(sqrt(diag(vcovHC(model4))))
- )
-```
-
-
-
-```{r}
-#Causal model #Subgroup analysis olive oil #2
-model1a<-lm(preferred_olive_oil_2 ~ azzignment, data=olive_oil2_df)
-model2a<-lm(preferred_olive_oil_2 ~ azzignment  + covid + num_oo_tastings, data=olive_oil2_df)
-model3a<-lm(preferred_olive_oil_2 ~ azzignment  + covid +num_oo_tastings + azzignment*covid + azzignment*num_oo_tastings, data=olive_oil2_df)
-
- stargazer(
-  model1a, model2a,model3a,
-   type = 'text',
-  covariate.labels=c('Received positive messaging on olive oil 2', 'Had covid', 'Has olive oil tasting experience','Received positive messaging on olive oil 2: Had covid', 'Received positive messaging on olive oil 2 : Has olive oil tasting experience'),
-  dep.var.labels='Preferred to Take Home Olive Oil 2',
-  se=list(sqrt(diag(vcovHC(model1a))),sqrt(diag(vcovHC(model2a))),sqrt(diag(vcovHC(model3a))))
- )
-```
-```{r}
-#Causal model
-model1b<-lm(preferred_olive_oil_2 ~ azzignment,  data=olive_oil1_df)
-model2b<-lm(preferred_olive_oil_2 ~ azzignment  + covid + num_oo_tastings, data=olive_oil1_df)
-model3b<-lm(preferred_olive_oil_2 ~ azzignment + covid + num_oo_tastings+ azzignment*covid +  azzignment*num_oo_tastings, data=olive_oil1_df)
-
- stargazer(
-  model1b, model2b,model3b,
-   type = 'text',
-  covariate.labels=c('Received positive messaging on olive oil 2', 'Had covid', 'Has olive oil tasting experience','Received positive messaging on olive oil 2: Had covid', 'Received positive messaging on olive oil 2 : Has olive oil tasting experience'),
-  dep.var.labels='Preferred to Take Home Olive Oil 2',
-  se=list(sqrt(diag(vcovHC(model1b))),sqrt(diag(vcovHC(model2b))),sqrt(diag(vcovHC(model3b))))
- )
-```
-```{r}
-#Descriptive model
+#Descriptive model olive oil #1
 model3<-lm(better_smell ~ azzignment +covid +num_oo_tastings, 
-             data=olive_oil2_df %>%
+             data=olive_oil1_df %>%
               filter(better_smell !='Neither')%>%
-              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_1',1,0)))
+ model4<-lm(more_bitter ~ azzignment +covid +num_oo_tastings,
+             data=olive_oil1_df %>%
+              filter(more_bitter !='Neither')%>%
+              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_1',1,0)))
  stargazer(
-  model3,
+  model3,model4,
    type = 'text',
     covariate.labels=c('Received positive messaging on olive oil 2', 'Had covid', 'Has olive oil tasting experience'),
   dep.var.labels='Preferred Smell of Olive Oil 2',
-  se=list(sqrt(diag(vcovHC(model3))))
+  se=list(sqrt(diag(vcovHC(model3))),sqrt(diag(vcovHC(model4))))
  )
 
- model4<-lm(better_smell ~ azzignment +covid +num_oo_tastings,
-             data=olive_oil1_df %>%
-              filter(better_smell !='Neither')%>%
-              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
- stargazer(
-  model4,
-   type = 'text',
-      covariate.labels=c('Received positive messaging on olive oil 2', 'Had covid', 'Has olive oil tasting experience'),
-  dep.var.labels='Preferred Smell of Olive Oil 2',
-  se=list(sqrt(diag(vcovHC(model4))))
- )
 ```
 
 
 ```{r}
 
-#descriptive model 
-model5<-lm(more_bitter ~ azzignment +covid +num_oo_tastings,
+#descriptive model  olive oil #2
+model5<-lm(better_smell ~ azzignment +covid +num_oo_tastings, 
+             data=olive_oil2_df %>%
+              filter(better_smell !='Neither')%>%
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
+
+model6<-lm(more_bitter ~ azzignment +covid +num_oo_tastings, 
              data=olive_oil2_df %>%
               filter(more_bitter !='Neither')%>%
               mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
- stargazer(
-  model5,
-   type = 'text',
-  se=list(sqrt(diag(vcovHC(model5))))
- )
- 
- model6<-lm(more_bitter ~ azzignment +covid +num_oo_tastings, 
-             data=olive_oil1_df %>%
-              filter(more_bitter !='Neither')%>%
-              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
- stargazer(
-  model6,
-   type = 'text',
-  se=list(sqrt(diag(vcovHC(model6))))
- )
-```
-```{r}
-#Causal model
-model1b<-lm(preferred_olive_oil_2 ~ azzignment+age+country_of_birth, data=olive_oil1_df)
-model2b<-lm(preferred_olive_oil_2 ~ azzignment+ covid + num_oo_tastings+age+country_of_birth, data=olive_oil1_df)
-model3b<-lm(preferred_olive_oil_2 ~ azzignment + covid + num_oo_tastings+ azzignment*covid +  azzignment*num_oo_tastings+age+country_of_birth, data=olive_oil1_df)
 
  stargazer(
-  model1b, model2b,model3b,
+  model5,model6,
    type = 'text',
-  se=list(sqrt(diag(vcovHC(model1b))),sqrt(diag(vcovHC(model2b))),sqrt(diag(vcovHC(model3b))))
+    dep.var.labels=c('Preferred Smell of Olive Oil2','Found Olive Oil 2 more bitter'),
+  se=list(sqrt(diag(vcovHC(model5))),sqrt(diag(vcovHC(model6))))
  )
 ```
-```{r}
-#Causal model
-model1b<-lm(preferred_olive_oil_2 ~ azzignment+age+country_of_birth, data=olive_oil2_df)
-model2b<-lm(preferred_olive_oil_2 ~ azzignment+ covid + num_oo_tastings+age+country_of_birth, data=olive_oil2_df)
-model3b<-lm(preferred_olive_oil_2 ~ azzignment + covid + num_oo_tastings+ azzignment*covid +  azzignment*num_oo_tastings+age+country_of_birth, data=olive_oil2_df)
 
- stargazer(
-  model1b, model2b,model3b,
-   type = 'text',
-  se=list(sqrt(diag(vcovHC(model1b))),sqrt(diag(vcovHC(model2b))),sqrt(diag(vcovHC(model3b))))
- )
-```
