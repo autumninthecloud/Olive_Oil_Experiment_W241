@@ -1,0 +1,257 @@
+---
+title: "Olive Oil Taste Test Experiment Report"
+author: "Autumn Rains, Hannah Gross, Pony Ameri, and Suna S Leloglu "
+date: "April 20, 2022"
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r global options, include = FALSE}
+knitr::opts_chunk$set(echo=FALSE,message = FALSE, warning = FALSE,tinytex.verbose = TRUE )
+```
+
+```{r}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(stargazer)
+library(sandwich)
+library(kableExtra)
+
+data <- read_excel("~/w241/Olive_Oil_Taste_Test/data/final_data/de-identified_data.xlsx")
+
+df<-data %>% 
+  filter(!is.na(better_smell)) %>%
+  rename(gender=sex) %>%
+  mutate(age=ifelse(age=='18 to 24' | age=='25 to 34', '18 to 34', ifelse(age =='35 to 44' | age=='45 to 54', '35 to 54','55 or older')),
+         country_of_birth=ifelse(birth_country != 'USA' & birth_country != 'Turkey' , 'Other', birth_country),
+         covid=ifelse(covid=='Yes',1,0),
+         num_oo_tastings=ifelse(tasting_count==0, 0,1),
+         better_smell=ifelse(better_smell=='1','Olive_oil_1',
+                             ifelse(better_smell =='2','Olive_oil_2','Neither')),
+         more_bitter=ifelse(more_bitter=='1','Olive_oil_1',
+                             ifelse(more_bitter =='2','Olive_oil_2','Neither')),
+         preferred_olive_oil_2=ifelse(better_taste ==2,1,0),
+         second_olive_oil=first_oo,
+         treatment=ifelse(azzignment =='treatment',1,0))
+olive_oil2_df<-df%>%filter(second_olive_oil==1)
+olive_oil1_df<-df%>%filter(second_olive_oil==0)
+```
+
+\section{Abstract}
+
+\section{Introduction}
+Our society equates higher quality, expensive experiences and items as superior and thus more enjoyable. Global businesses spend countless hours researching the ideal product messaging in advertisements to draw in potential consumers for products to increase sales. In a paper from the Aarhus School of Business, researchers investigated perceptions of quality among consumers from multiple studies spanning decades. One of the studies from 1994 was interested in studying the demand for Danish milk products in Northern Germany (Baadsgaard, Grunert, Grunert & Skytte). A conjoint analysis of geographic origin, type, and packaging was performed with 100 participants using survey methods. Researchers found that the quality perception of foods like cheeses were highly influenced by geographical origin but not for butter or milk. 
+
+From these studies, our research team is interested in investigating if positive messaging related to product characteristics such as price or geographic origin of production can influence the enjoyment through ‘priming methodologies’ (Ariely et al., 2006). To study these effects, we conducted a two-factor deception field experiment of taste tests with olive oil as it is typically lesser known than other food products like wine and coffee. Therefore, by positively influencing the perception of product quality through marketing messaging, we believe those in treatment will rate an olive oil positioned as higher in quality to be more enjoyable and favored. We analyzed our findings through linear regression within R studio.
+
+\section{Research Question}
+
+Our primary research question is: Does positive marketing influence a consumer’s preference of a product?
+
+\subsection{Sub-questions}
+Our descriptive questions related to our primary research question are:
+
+1. Do positive marketing messages influence the smell of a product to sway preference?
+2. Do cues regarding a lack of bitterness impact people’s perception of the bitterness of a product?
+
+
+\section{Hypothesis}
+A positive marketing message for a product will cause consumers to prefer the experience of consuming that product.
+
+\section{Experiment Design}
+The olive oil taste test is a between-subject, two-factor, deception design conducted with a convenience sample of local family and friends. In this experiment, our sample of family and friends is our population of interest. The two factors were: product messaging received (factual or marketing message) and olive oil sample tasting order. Participants were split amongst the four groups as detailed in the table below:
+
+The deception is that participants were told they were tasting two different olive oils, when they were actually tasting the same olive oil. This deception was a necessary aspect of the design to ensure that the only treatments in the experiment were the marketing messages and the sample tasting order.
+
+\subsection{Experiment Procedure}
+Participants were told that we (the authors) were conducting an olive oil taste test for the purpose of product research regarding great tasting olive oils. Prior to the experiment, participants were randomized into one of the four treatment groups and given a Stable Unit Treatment Value Assumption (SUTVA) Agreement. The SUTVA Agreement asked participants to remain silent during the experiment and to never discuss the experiment with anyone. Upon signing the agreement, participants were given a pre-experiment survey asking questions such as, if the participant had covid in the last two years, how many olive oil tastings they previously participated in, as well as immutable characteristics like their age. Each participant was run through the experiment individually in an Olive Oil Tasting Room separate from any other participants to eliminate interference between subjects. 
+
+
+Once in the Olive Oil Tasting Room, the experimenter (one of the authors) would conduct the experiment and collect participant outcomes reading from a script (see Appendix). Participants were given two clear shot glasses of the same olive oil, marked 1 and 2 with a black Sharpie. The experimenter told participants which olive oil to taste first and that they would only be able to smell and taste the oils one time. Once the ground rules were established, the experimenter recited to the participant their randomly assigned message. Once the message was given, the experimenter asked the participant to smell and taste the oils in the respective order and asked participants their preferences between the two oils. Once the experiment was completed participants were thanked and left the Olive Oil Tasting Room. 
+
+The ROXO grammar further illustrates our experiment design. It breaks down our non randomized group N, by randomly assigned participants into participants who will be tasting olive oil 1 first vs 2nd. Then we have these randomly assigned groups into treatment vs control (X$ vs O) and measure our 4 outcomes. 
+
+\subsection{Details on Placebo/Treatment Messages (M)}
+
+\subsection{Outcome Measures}
+
+### Preferred Taste (T)
+Preferred taste was the main outcome variable in this experiment and the last outcome measure collected in the experiment procedure. Before the experiment began, participants were told that a few lucky individuals would receive a sample of their preferred olive oil. During the experiment, after sipping the olive oils, we asked participants, “... which olive oil would you prefer a sample of?”. This question motivated a binary response, where the participant could choose either olive oil 1 or 2. Because we had promised the participants may get a sample of their preferred olive oil, this measure was behaviorally aligned, making it a trustworthy measure of preference. 
+
+\subsection{Sample Recruitment}
+
+\subsection{Randomization Strategy}
+
+\subsection{Pre-Treatment Covariates}
+
+\section{Results}
+
+\subsection{Overview}
+To assess if a causal relationship exists between positive messaging and product preference, we use regression analysis. In particular, we estimate the following models: 
+
+
+
+$$T = \beta_0 + \beta_1M + \beta_2O (1) \\  $$
+$$T = \beta_0 + \beta_1M + \beta_2O + \beta_3M*O(2) \\$$
+ 
+ 
+$T= B_0+B_1M+B_2O 								                     	        (1)$
+$T= B_0+B_1M+B2O +B3M*O							                          (2)$
+$T=  B_0+B_1M+B2O + B3C+B4T + B5M*O						        (3)$
+$T=  B_0+B_1M+B2O +B3C+B4T + B5M*O + B6M*C+ B7M*T+B8O*C+B9O*T	        (4)$
+
+Where T indicates our outcome of interest which is preference to take home olive oil 2, M indicates our treatment variable - positive marketing messaging on olive oil 2, O indicates that a subject received the olive oil 2 first, C indicates that a subject has had a covid infection and T indicates that a subject has had olive oil tasting experience. 
+
+Given that the first sample showed a statistically significant effect for the order of olive oil tasting, we decided to conduct a sub group analysis to do a deeper exploration of our results. We estimate the following models: 
+
+
+Y= B0+B1M								                    	        (5)
+Y=  B0+B1M+ B2C+B3T 						                                   (6)
+Y=  B0+B1M+B2C+B3T + B4M*C+ B5M*T 					        (7)
+
+Lastly, we examine the effect of the treatment effect on smell preference and perceived olive oil bitterness by estimating the following equations:
+
+S=  B0+B1M+B2O+B3C + B4T 					       		        (8)
+B=  B0+B1M+B2O+B3XC+ B4T+ e 					       		        (9)
+
+where S indicates the outcome preferred smell of olive oil 2 and  and B indicates the outcome found olive oil 2 more bitter.
+
+\subsection{Causal Model}
+Table 1 shows the estimates from equations 1-4 that look at the overall impact of the treatment on product preference. We find no significant treatment effect from receiving positive marketing messaging on olive oil 2 compared with the control (factual message on olive oil 2) group. Similarly, receiving olive oil 2 first was no more or less effective on the subjects’ preference to take home olive oil 2. With respect to the pre-treatment covariates, having had a covid infection and olive oil tasting experience show no significant impact on the outcome. 
+
+Furthermore, all the interaction terms from these variables M*O, M*C,M*T,O*C and O*T all fail to indicate any statistically significant effect on subjects’ preference to take home olive oil 2.
+
+
+```{r}
+#Causal model analysis
+model1<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil, data=df)
+model2<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil, data=df)
+model3<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings, data=df)
+model4<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid+ num_oo_tastings+ azzignment*covid+azzignment*num_oo_tastings + second_olive_oil*covid+ second_olive_oil*num_oo_tastings, data=df)
+
+model_list=list(model1, model2, model3, model4)
+
+ stargazer(
+  model1, model2,model3,model4,
+  title='Table 1: Causal Models',
+  type = 'text',
+  covariate.labels=c('Received positive messaging on olive oil 2', 'Received second olive oil first', 'Had covid', 'Has olive oil tasting experience',
+                      'Received positive messaging on olive oil 2 : Received Second Olive Oil First', 'Received positive messaging on olive oil 2: Had covid', 
+                      'Received positive messaging on olive oil 2 : Has olive oil tasting experience','Received Second Olive Oil First: Had covid',
+                      'Received Second Olive Oil First: Has olive oil tasting experience'),
+  dep.var.labels='Preferred to Take Home Olive Oil 2',
+  column.labels=c("Model 1", "Model 2", "Model 3", "Model 4"),
+  model.numbers =FALSE,
+  align=TRUE,
+  notes.align="l",
+  omit.stat="f",
+  se=lapply(model_list, function(x)sqrt(diag(vcovHC(x)))))
+```
+
+\subsection{Sub-group Anlayis}
+We similarly find no effect from the positive marketing message on the subsamples for which subjects were assigned to taste olive oil 1 first or olive oil 2 first (regression results available in table 2 and table 3 for equations 5-7). However, we find that having olive oil tasting experience has a significant effect on the outcome for subjects assigned to taste olive oil 1 first. That is, subjects assigned to taste olive oil 1 and who had olive oil tasting experience were 2.83 percentage points less likely to prefer olive oil 2 to olive oil 1. The point estimate suggests that the magnitude of the effect is significant at the 1% significance level ( p < 0.1) and not at the 5% significance level. We fail to reject the null hypothesis and conclude that the observed differences may have simply been from chance. We also estimated the outcomes for the interaction terms positive marketing messaging on olive oil 2 and previously having  a covid infection (M*C),and receiving positive marketing messaging on olive oil 2 and having olive oil tasting experience (M*T). We detected a highly statistically significant effect for the interaction between positive marketing messaging on olive oil 2 and having olive oil tasting experience on preference to take home olive oil 2 (p <0.05) but the main effects for both positive marketing message on olive oil 2 and having olive oil tasting experience showed non-significant effects (p > 0.05). Given this case, this means that for both subsamples having olive oil tasting experience has no effect on preference for taking home olive oil 2 if the subject has not received positive marketing messaging on olive oil 2. Similarly, if the subject has no olive oil tasting experience, positive marketing messaging on olive oil 2 has no impact on whether a subject prefers to take home olive oil 2. The point estimates from the variables above are generally not significantly different from zero for group that received olive oil 2 first (p > 0.05)
+
+```{r}
+#Causal model #Subgroup analysis olive oil #2
+model1a<-lm(preferred_olive_oil_2 ~ azzignment, data=olive_oil2_df)
+model2a<-lm(preferred_olive_oil_2 ~ azzignment  + covid + num_oo_tastings, data=olive_oil2_df)
+model3a<-lm(preferred_olive_oil_2 ~ azzignment  + covid +num_oo_tastings + azzignment*covid + azzignment*num_oo_tastings, data=olive_oil2_df)
+
+model_lista=list(model1a, model2a, model3a)
+
+ stargazer(
+  model1a, model2a,model3a,
+  title='Table 2: Subgroup Analysis Models - Olive Oil 2',
+   type = 'text',
+  column.labels=c("Model 1", "Model 2", "Model 3"),
+  covariate.labels=c('Received positive messaging on olive oil 2', 'Had covid', 'Has olive oil tasting experience','Received positive messaging on olive oil 2: Had covid', 'Received positive messaging on olive oil 2 : Has olive oil tasting experience'),
+  model.numbers =FALSE,
+  align=TRUE,
+  notes.align="l",
+  font.size = "small",
+  column.sep.width = "1pt",
+  omit.stat="f",
+  se=lapply(model_lista, function(x)sqrt(diag(vcovHC(x))))
+ )
+```
+
+```{r}
+#Causal model #Subgroup analysis olive oil #1
+model1b<-lm(preferred_olive_oil_2 ~ azzignment, data=olive_oil1_df)
+model2b<-lm(preferred_olive_oil_2 ~ azzignment  + covid + num_oo_tastings, data=olive_oil1_df)
+model3b<-lm(preferred_olive_oil_2 ~ azzignment  + covid +num_oo_tastings + azzignment*covid + azzignment*num_oo_tastings, data=olive_oil1_df)
+model_listb=list(model1b, model2b, model3b)
+ stargazer(
+  model1b, model2b,model3b,
+    title='Table 3: Subgroup Analysis Model - Olive Oil 1',
+    column.labels=c("Model 1", "Model 2", "Model 3"),
+   type = 'text',
+  covariate.labels=c('Received positive messaging on olive oil 2', 'Had covid', 'Has olive oil tasting experience','Received positive messaging on olive oil 2: Had covid', 'Received positive messaging on olive oil 2 : Has olive oil tasting experience'),
+  dep.var.labels='Preferred to Take Home Olive Oil 2',
+  model.numbers =FALSE,
+  align=TRUE,
+  notes.align="l",
+  font.size = "small",
+  column.sep.width = "1pt",
+  omit.stat="f",
+  se=lapply(model_listb, function(x)sqrt(diag(vcovHC(x, type = "HC1"))))
+ )
+```
+
+
+\subsection{Descriptive Models}
+Table 4 shows the estimates from equations 8-9, which target the sub-questions posed in the research question section. The coefficients indicate that receiving positive marketing messaging on olive oil 2, tasting olive oil 2 first, having had a covid infection and olive oil tasting experience have no significant impact on either preference for the smell of olive oil 2 or finding olive oil 2 more bitter. As such we can state that the study does not demonstrate that positive marketing messaging influences olive oil product preference based on bitterness or smell.
+
+```{r, echo=FALSE}
+#Descriptive model olive oil #1
+model3<-lm(better_smell ~ azzignment +covid +num_oo_tastings, 
+             data=df %>%
+              filter(better_smell !='Neither')%>%
+              mutate(better_smell=ifelse(better_smell=='Olive_oil_2',1,0)))
+model4<-lm(more_bitter ~ azzignment +covid +num_oo_tastings,
+             data=df %>%
+              filter(more_bitter !='Neither')%>%
+              mutate(more_bitter=ifelse(more_bitter=='Olive_oil_2',1,0)))
+
+model_list2=list(model3, model4)
+ stargazer(
+  model3,model4,
+  title='Table 4: Descriptive Models',
+  type = 'text',
+  column.labels=c("Preferred Smell Model",  "Bitter Model"),
+  covariate.labels=c('Received positive messaging on olive oil 2', 'Had covid', 'Has olive oil tasting experience'),
+  model.numbers =FALSE,
+  dep.var.labels.include = FALSE,
+  omit.stat=c("f"),
+  se=lapply(model_list2, function(x)sqrt(diag(vcovHC(x, type = "HC1"))))
+ )
+```
+
+
+\section{Discussion/Critique}
+\subsection{Low Power Experiment}
+\subsection{Deception Design}
+\subsection{Measurements}
+\subsection{Unfair Randomization Methodology and  Unmanaged Attrition}
+\subsection{Interference}
+\subsection{Differences in Experiment Administration}
+
+\section{Conclusion}
+
+\section{Bibliography}
+
+1. Field Experiments Cognitive Effects of Deceptive Advertising https://www-jstor-org.libproxy.berkeley.edu/stable/3150398?seq=9 
+2. Taste of breath: the temporal order of taste and smell synchronized with breathing as a determinant for taste and olfactory integration https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5566545/
+3. 'Long Covid': Why are some people not recovering? https://www.bbc.com/news/health-54296223
+4. Try It, You’ll Like It The Influence of Expectation, Consumption, and Revelation on Preferences for Beer https://pubmed.ncbi.nlm.nih.gov/17201787/
+5. How Consumers are Affected by the Framing of Attribute Information Before and After Consuming the Product https://www.jstor.org/stable/2489471
+6. The Generation of Sensory Expectation By External Cues and Its Effect on Sensory Perception and Hedonic Ratings: A Review https://www.researchgate.net/publication/227766594_The_generation_of_sensory_expectation_by_external_cues_and_its_effect_on_sensory_perception_and_hedonic_ratings_A_review
+7. How Soy Labeling Influences Preference and Taste https://www.sciencedirect.com/science/article/abs/pii/S1096750800000318
+8. North American Olive Oil Association Website https://www.aboutoliveoil.org/
+9. CONSUMERS’ FOOD CHOICE AND QUALITY PERCEPTION https://pure.au.dk/portal/files/32302886/wp77.pdf/ 
+10. The keys to increasing the consumption of olive oil in the US https://www.aboutoliveoil.org/the-keys-to-increasing-the-consumption-of-olive-oil-in-the-us
+
+
