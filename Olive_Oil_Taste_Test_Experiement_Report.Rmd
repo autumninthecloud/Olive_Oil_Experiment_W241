@@ -25,7 +25,8 @@ data <- read_excel("~/w241/Olive_Oil_Taste_Test/data/final_data/de-identified_da
 df<-data %>% 
   filter(!is.na(better_smell)) %>%
   rename(gender=sex) %>%
-  mutate(country_of_birth=ifelse(birth_country != 'USA' & birth_country != 'Turkey' , 'Other', birth_country),
+  mutate(age=ifelse(age=='18 to 24' | age=='25 to 34', '18 to 34', ifelse(age =='35 to 44' | age=='45 to 54', '35 to 54','55 or older')),
+         country_of_birth=ifelse(birth_country != 'USA' & birth_country != 'Turkey' , 'Other', birth_country),
          covid=ifelse(covid=='Yes',1,0),
          num_oo_tastings=ifelse(tasting_count==0, 0,1),
          better_smell=ifelse(better_smell=='1','Olive_oil_1',
@@ -68,7 +69,6 @@ The deception is that participants were told they were tasting two different oli
 \subsection{Experiment Procedure}
 Participants were told that we (the authors) were conducting an olive oil taste test for the purpose of product research regarding great tasting olive oils. Prior to the experiment, participants were randomized into one of the four treatment groups and given a Stable Unit Treatment Value Assumption (SUTVA) Agreement. The SUTVA Agreement asked participants to remain silent during the experiment and to never discuss the experiment with anyone. Upon signing the agreement, participants were given a pre-experiment survey asking questions such as, if the participant had covid in the last two years, how many olive oil tastings they previously participated in, as well as immutable characteristics like their age. Each participant was run through the experiment individually in an Olive Oil Tasting Room separate from any other participants to eliminate interference between subjects. 
 
-![alt text here](path-to-image-here)
 
 Once in the Olive Oil Tasting Room, the experimenter (one of the authors) would conduct the experiment and collect participant outcomes reading from a script (see Appendix). Participants were given two clear shot glasses of the same olive oil, marked 1 and 2 with a black Sharpie. The experimenter told participants which olive oil to taste first and that they would only be able to smell and taste the oils one time. Once the ground rules were established, the experimenter recited to the participant their randomly assigned message. Once the message was given, the experimenter asked the participant to smell and taste the oils in the respective order and asked participants their preferences between the two oils. Once the experiment was completed participants were thanked and left the Olive Oil Tasting Room. 
 
@@ -92,12 +92,18 @@ Preferred taste was the main outcome variable in this experiment and the last ou
 \subsection{Overview}
 To assess if a causal relationship exists between positive messaging and product preference, we use regression analysis. In particular, we estimate the following models: 
 
-$P= B_0+B_1M+B_2O 								                     	        (1)$
-$P= B_0+B1M+B2O +B3M*O							                          (2)$
-$P=  B_0+B1M+B2O + B3C+B4T + B5M*O						        (3)$
-$P=  B_0+B1M+B2O +B3C+B4T + B5M*O + B6M*C+ B7M*T+B8O*C+B9O*T	        (4)$
 
-Where P indicates our outcome of interest which is preference to take home olive oil 2, M indicates our treatment variable - positive marketing messaging on olive oil 2, O indicates that a subject received the olive oil 2 first, C indicates that a subject has had a covid infection and T indicates that a subject has had olive oil tasting experience. 
+
+$$T = \beta_0 + \beta_1M + \beta_2O (1) \\  $$
+$$T = \beta_0 + \beta_1M + \beta_2O + \beta_3M*O(2) \\$$
+ 
+ 
+$T= B_0+B_1M+B_2O 								                     	        (1)$
+$T= B_0+B_1M+B2O +B3M*O							                          (2)$
+$T=  B_0+B_1M+B2O + B3C+B4T + B5M*O						        (3)$
+$T=  B_0+B_1M+B2O +B3C+B4T + B5M*O + B6M*C+ B7M*T+B8O*C+B9O*T	        (4)$
+
+Where T indicates our outcome of interest which is preference to take home olive oil 2, M indicates our treatment variable - positive marketing messaging on olive oil 2, O indicates that a subject received the olive oil 2 first, C indicates that a subject has had a covid infection and T indicates that a subject has had olive oil tasting experience. 
 
 Given that the first sample showed a statistically significant effect for the order of olive oil tasting, we decided to conduct a sub group analysis to do a deeper exploration of our results. We estimate the following models: 
 
@@ -124,7 +130,7 @@ Furthermore, all the interaction terms from these variables M*O, M*C,M*T,O*C and
 model1<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil, data=df)
 model2<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil, data=df)
 model3<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings, data=df)
-model4<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid + num_oo_tastings + azzignment*covid + azzignment*num_oo_tastings + second_olive_oil*covid + second_olive_oil*num_oo_tastings, data=df)
+model4<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil + azzignment*second_olive_oil + covid+ num_oo_tastings+ azzignment*covid+azzignment*num_oo_tastings + second_olive_oil*covid+ second_olive_oil*num_oo_tastings, data=df)
 
 model_list=list(model1, model2, model3, model4)
 
@@ -142,7 +148,7 @@ model_list=list(model1, model2, model3, model4)
   align=TRUE,
   notes.align="l",
   omit.stat="f",
-  se=lapply(model_list, function(x)sqrt(diag(vcovHC(x, type = "HC1")))))
+  se=lapply(model_list, function(x)sqrt(diag(vcovHC(x)))))
 ```
 
 \subsection{Sub-group Anlayis}
@@ -168,7 +174,7 @@ model_lista=list(model1a, model2a, model3a)
   font.size = "small",
   column.sep.width = "1pt",
   omit.stat="f",
-  se=lapply(model_lista, function(x)sqrt(diag(vcovHC(x, type = "HC1"))))
+  se=lapply(model_lista, function(x)sqrt(diag(vcovHC(x))))
  )
 ```
 
