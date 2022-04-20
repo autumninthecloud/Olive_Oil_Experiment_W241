@@ -93,29 +93,48 @@ Preferred taste was the main outcome variable in this experiment and the last ou
 To assess if a causal relationship exists between positive messaging and product preference, we use regression analysis. In particular, we estimate the following models: 
 
 
+\begin{equation}
+T = \beta_0 + \beta_1M + \beta_2O
+\end{equation}
 
-$$T = \beta_0 + \beta_1M + \beta_2O (1) \\  $$
-$$T = \beta_0 + \beta_1M + \beta_2O + \beta_3M*O(2) \\$$
- 
- 
-$T= B_0+B_1M+B_2O 								                     	        (1)$
-$T= B_0+B_1M+B2O +B3M*O							                          (2)$
-$T=  B_0+B_1M+B2O + B3C+B4T + B5M*O						        (3)$
-$T=  B_0+B_1M+B2O +B3C+B4T + B5M*O + B6M*C+ B7M*T+B8O*C+B9O*T	        (4)$
+\begin{equation} 
+T = \beta_0 + \beta_1M + \beta_2O + \beta_3M*0
+\end{equation}
 
-Where T indicates our outcome of interest which is preference to take home olive oil 2, M indicates our treatment variable - positive marketing messaging on olive oil 2, O indicates that a subject received the olive oil 2 first, C indicates that a subject has had a covid infection and T indicates that a subject has had olive oil tasting experience. 
+\begin{equation}
+T = \beta_0 + \beta_1M + \beta_2O + \beta_3C + \beta_4T + \beta_5M*0
+\end{equation}
+
+\begin{equation} 
+T = \beta_0 + \beta_1M + \beta_2O +  \beta_3C + \beta_4T + \beta_5M*0 +\beta_6M*C +\beta_7M*T +\beta_8O*C + \beta_9O*T
+\end{equation}
+
+
+where T indicates our outcome of interest which is preference to take home olive oil 2, M indicates our treatment variable - positive marketing messaging on olive oil 2, O indicates that a subject received the olive oil 2 first, C indicates that a subject has had a covid infection and T indicates that a subject has had olive oil tasting experience. 
 
 Given that the first sample showed a statistically significant effect for the order of olive oil tasting, we decided to conduct a sub group analysis to do a deeper exploration of our results. We estimate the following models: 
 
+\begin{equation}
+T = \beta_0 + \beta_1M 
+\end{equation}
 
-Y= B0+B1M								                    	        (5)
-Y=  B0+B1M+ B2C+B3T 						                                   (6)
-Y=  B0+B1M+B2C+B3T + B4M*C+ B5M*T 					        (7)
+\begin{equation} 
+T = \beta_0 + \beta_1M + \beta_2C + \beta_3T
+\end{equation}
+
+\begin{equation}
+T = \beta_0 + \beta_1M + \beta_2C + \beta_3T + \beta_4M*C + \beta_5M*T
+\end{equation}
 
 Lastly, we examine the effect of the treatment effect on smell preference and perceived olive oil bitterness by estimating the following equations:
 
-S=  B0+B1M+B2O+B3C + B4T 					       		        (8)
-B=  B0+B1M+B2O+B3XC+ B4T+ e 					       		        (9)
+\begin{equation}
+S = \beta_0 + \beta_1M + \beta_2O + \beta_3C + \beta_4T
+\end{equation}
+
+\begin{equation}
+B = \beta_0 + \beta_1M + \beta_2O + \beta_3C + \beta_4T
+\end{equation}
 
 where S indicates the outcome preferred smell of olive oil 2 and  and B indicates the outcome found olive oil 2 more bitter.
 
