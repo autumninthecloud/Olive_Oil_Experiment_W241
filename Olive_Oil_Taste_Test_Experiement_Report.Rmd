@@ -142,7 +142,7 @@ where S indicates the outcome preferred smell of olive oil 2 and  and B indicate
 \subsection{Causal Model}
 Table 1 shows the estimates from equations 1-4 that look at the overall impact of the treatment on product preference. We find no significant treatment effect from receiving positive marketing messaging on olive oil 2 compared with the control (factual message on olive oil 2) group. Similarly, receiving olive oil 2 first was no more or less effective on the subjects’ preference to take home olive oil 2. With respect to the pre-treatment covariates, having had a covid infection and olive oil tasting experience show no significant impact on the outcome. 
 
-Furthermore, all the interaction terms from these variables M*O, M*C,M*T,O*C and O*T all fail to indicate any statistically significant effect on subjects’ preference to take home olive oil 2.
+Furthermore, all the interaction terms from these variables fail to indicate any statistically significant effect on subjects’ preference to take home olive oil 2.
 ```{r,echo=FALSE, results='asis'}
 #Causal model analysis
 model1<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil, data=df)
@@ -157,6 +157,11 @@ model_list=list(model1, model2, model3, model4)
   title='Does positive marketing influence a consumer’s preference of a product?',
   type = 'latex',
   column.labels=c("Model 1", "Model 2", "Model 3", "Model 4"),
+  column.separate = c(1,1, 1, 1),
+  no.space=TRUE,
+  header=FALSE,
+  font.size = "small",
+  column.sep.width = "-15pt",
   covariate.labels=c('Positive messaging on olive oil 2', 'Tasted Olive Oil 2 First', 'Had covid', 'Olive oil tasting experience',
                       'Positive messaging on olive oil 2:Tasted Olive Oil 2 First', 'Positive messaging on olive oil 2:Had covid', 
                       'Positive messaging on olive oil 2:Olive oil tasting experience','Tasted Olive Oil 2 First:Had covid',
@@ -169,7 +174,7 @@ model_list=list(model1, model2, model3, model4)
 ```
 
 \subsection{Sub-group Anlayis}
-We similarly find no effect from the positive marketing message on the subsamples for which subjects were assigned to taste olive oil 1 first or olive oil 2 first (regression results available in table 2 and table 3 for equations 5-7). However, we find that having olive oil tasting experience has a significant effect on the outcome for subjects assigned to taste olive oil 1 first. That is, subjects assigned to taste olive oil 1 and who had olive oil tasting experience were 2.83 percentage points less likely to prefer olive oil 2 to olive oil 1. The point estimate suggests that the magnitude of the effect is significant at the 1% significance level ( p < 0.1) and not at the 5% significance level. We fail to reject the null hypothesis and conclude that the observed differences may have simply been from chance. We also estimated the outcomes for the interaction terms positive marketing messaging on olive oil 2 and previously having  a covid infection (M*C),and receiving positive marketing messaging on olive oil 2 and having olive oil tasting experience (M*T). We detected a highly statistically significant effect for the interaction between positive marketing messaging on olive oil 2 and having olive oil tasting experience on preference to take home olive oil 2 (p <0.05) but the main effects for both positive marketing message on olive oil 2 and having olive oil tasting experience showed non-significant effects (p > 0.05). Given this case, this means that for both subsamples having olive oil tasting experience has no effect on preference for taking home olive oil 2 if the subject has not received positive marketing messaging on olive oil 2. Similarly, if the subject has no olive oil tasting experience, positive marketing messaging on olive oil 2 has no impact on whether a subject prefers to take home olive oil 2. The point estimates from the variables above are generally not significantly different from zero for group that received olive oil 2 first (p > 0.05)
+We similarly find no effect from the positive marketing message on the subsamples for which subjects were assigned to taste olive oil 1 first or olive oil 2 first (regression results available in table 2 and table 3 for equations 5-7). However, we find that having olive oil tasting experience has a significant effect on the outcome for subjects assigned to taste olive oil 1 first. That is, subjects assigned to taste olive oil 1 and who had olive oil tasting experience were 2.83 percentage points less likely to prefer olive oil 2 to olive oil 1. The point estimate suggests that the magnitude of the effect is significant at the 1% significance level ( p < 0.1) and not at the 5% significance level. We fail to reject the null hypothesis and conclude that the observed differences may have simply been from chance. We also estimated the outcomes for the interaction terms positive marketing messaging on olive oil 2 and previously having  a covid infection, and receiving positive marketing messaging on olive oil 2 and having olive oil tasting experience. We detected a highly statistically significant effect for the interaction between positive marketing messaging on olive oil 2 and having olive oil tasting experience on preference to take home olive oil 2 (p <0.05) but the main effects for both positive marketing message on olive oil 2 and having olive oil tasting experience showed non-significant effects (p > 0.05). Given this case, this means that for both subsamples having olive oil tasting experience has no effect on preference for taking home olive oil 2 if the subject has not received positive marketing messaging on olive oil 2. Similarly, if the subject has no olive oil tasting experience, positive marketing messaging on olive oil 2 has no impact on whether a subject prefers to take home olive oil 2. The point estimates from the variables above are generally not significantly different from zero for group that received olive oil 2 first (p > 0.05)
 ```{r,echo=FALSE, results='asis'}
 #Causal model #Subgroup analysis olive oil #2
 model1a<-lm(preferred_olive_oil_2 ~ azzignment, data=olive_oil2_df)
@@ -180,18 +185,20 @@ model_lista=list(model1a, model2a, model3a)
 
  stargazer(
   model1a, model2a,model3a,
-  title='Subgroup Analysis Models - Olive Oil 2',
+  title='Subgroup Analysis Models - Group assigned to taste Olive Oil 2 first',
    type = 'latex',
   column.labels=c("Model 1", "Model 2", "Model 3"),
+    column.separate = c(1,1, 1, 1),
+  no.space=TRUE,
+  header=FALSE,
+  font.size = "small",
   covariate.labels=c('Positive messaging on olive oil 2', 'Had covid', 'Olive oil tasting experience','Positive messaging on olive oil 2:Had covid', 'Positive messaging on olive oil 2:Olive oil tasting experience'),
   model.numbers =FALSE,
    dep.var.labels='Preferred to Take Home Olive Oil 2',
   omit.stat=c("f"),
   se=lapply(model_lista, function(x)sqrt(diag(vcovHC(x))))
  )
-```
 
-```{r,echo=FALSE, results='asis'}
 #Causal model #Subgroup analysis olive oil #1
 model1b<-lm(preferred_olive_oil_2 ~ azzignment, data=olive_oil1_df)
 model2b<-lm(preferred_olive_oil_2 ~ azzignment  + covid + num_oo_tastings, data=olive_oil1_df)
@@ -199,9 +206,13 @@ model3b<-lm(preferred_olive_oil_2 ~ azzignment  + covid +num_oo_tastings + azzig
 model_listb=list(model1b, model2b, model3b)
  stargazer(
   model1b, model2b,model3b,
-    title='Subgroup Analysis Model - Olive Oil 1',
+    title='Subgroup Analysis Model -  Group assigned to taste Olive Oil 1 first',
    type = 'latex',
   column.labels=c("Model 1", "Model 2", "Model 3"),
+    column.separate = c(1,1, 1, 1),
+  no.space=TRUE,
+  header=FALSE,
+  font.size = "small",
   covariate.labels=c('Positive messaging on olive oil 2', 'Had covid', 'Olive oil tasting experience','Positive messaging on olive oil 2:Had covid', 'Positive messaging on olive oil 2:Olive oil tasting experience'),
   model.numbers =FALSE,
   dep.var.labels='Preferred to Take Home Olive Oil 2',
@@ -212,9 +223,11 @@ model_listb=list(model1b, model2b, model3b)
 ```
 
 
+
+
 \subsection{Descriptive Models}
 Table 4 shows the estimates from equations 8-9, which target the sub-questions posed in the research question section. The coefficients indicate that receiving positive marketing messaging on olive oil 2, tasting olive oil 2 first, having had a covid infection and olive oil tasting experience have no significant impact on either preference for the smell of olive oil 2 or finding olive oil 2 more bitter. As such we can state that the study does not demonstrate that positive marketing messaging influences olive oil product preference based on bitterness or smell.
-```{r, echo=FALSE, results='asis'}
+```{r,results='asis'}
 #Descriptive model olive oil #1
 model3<-lm(better_smell ~ azzignment +covid +num_oo_tastings, 
              data=df %>%
@@ -231,6 +244,10 @@ model_list2=list(model3, model4)
   title='Do positive marketing messages influence the smell of a product to sway preference? Do cues regarding a lack of bitterness impact people’s perception of the bitterness of a product?',
   type = 'latex',
   column.labels=c("Smell Model",  "Bitter Model"),
+    column.separate = c(1,1, 1, 1),
+  no.space=TRUE,
+  header=FALSE,
+  font.size = "small",
   covariate.labels=c('Positive messaging on olive oil 2', 'Had covid', 'Olive oil tasting experience'),
   model.numbers =FALSE,
   dep.var.labels.include = FALSE,
