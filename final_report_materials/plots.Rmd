@@ -267,8 +267,6 @@ ggplot(melted_gender_data, aes(fill=as.factor(by), y=value, x=treatment)) +
 
 
 
-
-
 ```{r Make functions for power analysis, include=TRUE} 
 # Function to generate fake data...
 make_data <- function(N=2000, ate=.5) { 
@@ -310,8 +308,7 @@ get_n_p_value_rejects <- function(N=0, d=fake_pop_data) {
 fake_pop_data <- make_data(10000, .05)  
 
 # Populate the percent p-value rejects vector.
-N_to_sample <-  c(80, 100)
-#N_to_sample <-  c(80, 100, 250, 500, 1000, 1500, 2000, 2500, 3000, 5000, 7500, 10000)
+N_to_sample <-  c(80, 100, 250, 500, 1000, 1500, 2000, 2500, 3000, 5000, 7500, 10000)
 n_p_value_rejects <- NA
 
 for (i in 1:length(N_to_sample)) {

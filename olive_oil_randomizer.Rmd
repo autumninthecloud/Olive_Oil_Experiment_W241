@@ -1,5 +1,5 @@
 ---
-title: "olive_oil_randomizer"
+title: "Olive Oil Randomizer"
 output: html_document
 ---
 
@@ -18,7 +18,7 @@ set.seed(14)
 ```
 
 ```{r import data, eval=FALSE}
-filename <- "Olive Oil Experiment Participant List_3_19_22_v2.xlsx" # Change Me!
+filename <- "Olive Oil Experiment Participant List_3_19_22.xlsx" # Change Me!
 
 data <- read_excel(paste("./data/participant_data/", filename, sep=""),
                    sheet = 'Sheet1', skip = 2, col_names = TRUE)
@@ -50,7 +50,7 @@ azzigned_data2 <- rbind(azzigned, needs_azzignment)
 ```
 
 ```{r write new excel file, eval=FALSE}
-random_file = paste("./data/randomized_participant_data/randomized_", filename, sep="")
-write_xlsx(azzigned_data2, random_file)
+#random_file = paste("./data/randomized_participant_data/randomized_", filename, sep="")
+#write_xlsx(azzigned_data2, random_file)
 ```
 

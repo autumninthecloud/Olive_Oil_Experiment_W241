@@ -19,26 +19,17 @@ library(stringr)
 ```
 
 ```{r import data, echo=FALSE}
-filename <- "randomized_Olive Oil Experiment Participant List_3_19_22.xlsx"
+filename <- "randomized_Olive Oil Experiment Participant List_3_15_22.xlsx"
 
 data <- read_excel(paste("../data/randomized_participant_data/", filename, sep=""), 
                    sheet = 'Sheet1', skip = 0, col_names = TRUE)
 data <- data.table(data)
-```
 
-```{r build header, echo=FALSE}
 # Add `tested` variable, Tested if Signed Agreement != NaN.
-data[, tested := ifelse(is.na(s_agreement) == FALSE, 'Tested', 'Not Tested Yet')]
-
-# Build Plot Title.
-start <- str_locate(filename, "List_")[2]+1
-stop <- str_locate(filename, ".xlsx")[1]-1
-date <- str_replace_all(substr(filename, start, stop), "_", "/")
-# title <- paste(data[,table(tested)][2], " Participants Tested, ", data[,table(tested)][1], " More To Go As Of ", date, sep="")
+data[, tested := ifelse(is.na(smell_outcome) == FALSE, 'Tested', 'Not Tested Yet')]
 ```
 
-## `r data[,table(tested)][2]` Participants Tested, `r data[,table(tested)][1]` More To Go As Of `r date`.
-
+# 50 Participants Tested, 37 More To Go As Of 3/15/22.
 
 ```{r check azzignment ratios, warning=FALSE, echo=FALSE}
 # Get data.table of number of participants azzigned to control/treatment by `tested`.
@@ -48,13 +39,27 @@ melted_azzignment_data <- data.table(melt(data[, table(tested, by=(azzignment))]
 azzignment_title = paste(data[, round(mean(azzignment=='treatment'),2)*100], '% of all participants assigned to Treatment.', sep='')
 
 # Build Plot.
-ggplot(melted_azzignment_data, aes(fill=by, y=value, x=tested)) + 
-  geom_bar(position="stack", stat="identity") +
+ggplot(melted_azzignment_data, aes(fill=as.factor(by), y=value, x=tested)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
   ggtitle(azzignment_title) +
-  xlab("Participant Status") + ylab("Number of Participants") + 
-  labs(fill='Assignment') +
-  ylim(0, 50)
+  scale_x_discrete(name = "", labels = c('Not Tested', 'Tested'), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c('Recieved Factual Message', 'Recieved Marketing Message'), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 3)) +
+  geom_text(aes(x=c(.77, 1.77, 1.23, 2.23), 
+                label = melted_azzignment_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
 ```
+
 ```{r check first olive oil 1 vs 2 ratios, warning=FALSE, echo=FALSE}
 # Get data.table of number of participants azzigned to taste OO #1 or OO #2 first by `tested`.
 melted_first_oo_data <- data.table(melt(data[, table(tested, by=(first_oo))], id=c("tested")))
@@ -64,50 +69,100 @@ first_oo_title = paste(data[, round(mean(first_oo==0),2)*100], '% of all partici
 
 # Build Plot.
 ggplot(melted_first_oo_data, aes(fill=as.factor(by), y=value, x=tested)) + 
-  geom_bar(position="stack", stat="identity") +
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
   ggtitle(first_oo_title) +
-  xlab("Participant Status") + ylab("Number of Participants") + 
-  scale_fill_discrete(name = "First Olive Oil", labels = c("#1", "#2")) +
-  ylim(0, 50)
+  scale_x_discrete(name = "", labels = c('Not Tested', 'Tested'), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c("Tasted Olive Oil #1 First", "Tasted Olive Oil #2 First"), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 2)) +
+  geom_text(aes(x=c(.77, 1.77, 1.23, 2.23), 
+                label = melted_first_oo_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
 ```
 
+# Covariate Balance Check
 
 ```{r import pre experiment survey data, echo=FALSE}
-filename <- "CLEAN 3.16.22Pre Experiment Survey - Olive Oil Taste Test (Responses).xlsx"
+filename <- "CLEAN_PreExperiment_Survey_3_16_22.xlsx"
 
-data <- read_excel(paste("../", filename, sep=""), skip = 0, col_names = TRUE)
+data <- read_excel(paste("./", filename, sep=""), skip = 0, col_names = TRUE)
 data <- data.table(data)
+
+# Adding an adjusted birth country column
+data[, adj_birth_country := ifelse(country_of_birth=='USA', 'USA', ifelse(country_of_birth=='Turkey', 'Turkey', 'Other'))]
+
+# Adding an adjusted age range column
+data[, adj_age := ifelse(age=='18 to 24' | age=='25 to 34', '18 to 34',
+                         ifelse(age =='35 to 44' | age=='45 to 54', '35 to 54','55 or older'))]
+
 ```
+
+
 ```{r check country_of_birth ratios, warning=FALSE, echo=FALSE}
 # Get data.table of number of participants azzigned to control/treatment by `country_of_birth`.
-melted_country_of_birth_data <- data.table(melt(data[, table(country_of_birth, by=(azzignment))], id=c("country_of_birth")))
+melted_country_of_birth_data <- data.table(melt(data[, table(adj_birth_country, by=(azzignment))], id=c("country_of_birth")))
 
 # Build title.
 country_of_birth_title = "Covariate Check on Country of Birth"
 
 # Build Plot.
-ggplot(melted_country_of_birth_data, aes(fill=by, y=value, x=country_of_birth)) + 
-  geom_bar(position="stack", stat="identity") +
+ggplot(melted_country_of_birth_data, aes(fill=as.factor(by), y=value, x=adj_birth_country)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
   ggtitle(country_of_birth_title) +
-  xlab("Country of Birth") + ylab("Number of Participants") + 
-  labs(fill='Assignment') +
-  ylim(0, 30)
+  scale_x_discrete(name = "Country of Birth") +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c('Recieved Factual Message', 'Recieved Marketing Message'), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 1)) +
+  geom_text(aes(x=c(.77, 1.77, 2.77, 1.23, 2.23, 3.23), 
+                label = melted_country_of_birth_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
 ```
 
 ```{r check age ratios, warning=FALSE, echo=FALSE}
 # Get data.table of number of participants azzigned to control/treatment by `covid`.
-melted_age_data <- data.table(melt(data[, table(age, by=(azzignment))], id=c("age")))
+melted_age_data <- data.table(melt(data[, table(adj_age, by=(azzignment))], id=c("adj_age")))
 
 # Build title.
-age_title = "Covariate Check on Age Range"
+age_title = "Covariate Check on Age Ranges"
 
 # Build Plot.
-ggplot(melted_age_data, aes(fill=by, y=value, x=age)) + 
-  geom_bar(position="stack", stat="identity") +
+ggplot(melted_age_data, aes(fill=as.factor(by), y=value, x=adj_age)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
   ggtitle(age_title) +
-  xlab("Participant Age") + ylab("Number of Participants") + 
-  labs(fill='Assignment') +
-  ylim(0, 25)
+  scale_x_discrete(name = "Participant Age Range") +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c('Recieved Factual Message', 'Recieved Marketing Message'), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 1)) +
+  geom_text(aes(x=c(.77, 1.77, 2.77, 1.23, 2.23, 3.23), 
+                label = melted_age_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
 ```
 
 ```{r check covid ratios, warning=FALSE, echo=FALSE}
@@ -118,13 +173,28 @@ melted_covid_data <- data.table(melt(data[, table(covid, by=(azzignment))], id=c
 covid_title = "Covariate Check on Covid"
 
 # Build Plot.
-ggplot(melted_covid_data, aes(fill=by, y=value, x=covid)) + 
-  geom_bar(position="stack", stat="identity") +
+ggplot(melted_covid_data, aes(fill=as.factor(by), y=value, x=covid)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
   ggtitle(covid_title) +
-  xlab("Participant Covid Status") + ylab("Number of Participants") + 
-  labs(fill='Assignment') +
-  ylim(0, 40)
+  scale_x_discrete(name = "", labels = c('Did Not Have COVID-19', 'Had COVID-19'), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c("Tasted Olive Oil #1 First", "Tasted Olive Oil #2 First"), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 2)) +
+  geom_text(aes(x=c(.77, 1.77, 1.23, 2.23), 
+                label = melted_covid_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
 ```
+
+
 ```{r check no of previous olive oil tastings ratios, warning=FALSE, echo=FALSE}
 # Get data.table of number of participants azzigned to control/treatment by `oo_count`.
 melted_oo_count_data <- data.table(melt(data[, table(oo_count, by=(azzignment))], id=c("oo_count")))
@@ -133,11 +203,25 @@ melted_oo_count_data <- data.table(melt(data[, table(oo_count, by=(azzignment))]
 oo_count_title = "Covariate Check on Number of Times Tasted Olive Oil"
 
 # Build Plot.
-ggplot(melted_oo_count_data, aes(fill=by, y=value, x=oo_count)) + 
-  geom_bar(position="stack", stat="identity") +
+ggplot(melted_oo_count_data, aes(fill=as.factor(by), y=value, x=oo_count)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
   ggtitle(oo_count_title) +
-  xlab("# of Previous Olive Oil Tastings") + ylab("Number of Participants") + 
-  labs(fill='Assignment') +
-  ylim(0, 50)
+  scale_x_discrete(name = "", labels = c('0-1 Prior Tastings', '2+ Prior Tastings'), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c("Tasted Olive Oil #1 First", "Tasted Olive Oil #2 First"), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 5)) +
+  geom_text(aes(x=c(.77, 1.77, 1.23, 2.23), 
+                label = melted_oo_count_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
 ```
+
 
