@@ -1,12 +1,20 @@
 ---
-title: "Olive Oil Taste Test Experiment Report"
+title: "The Olive Oil Taste Test"
 author: "Autumn Rains, Hannah Gross, Pony Ameri, and Suna S Leloglu "
-date: "April 20, 2022"
+date: "W241 Experiments and Causality ~ Spring 2022"
+#output:
+ # pdf_document:
+  #  toc: true
+   # toc_depth: 3
+    #latex_engine: pdflatex
+
+    
 output:
-  pdf_document:
+  bookdown::pdf_document2: 
     toc: true
-    toc_depth: 2
-    latex_engine: pdflatex
+    toc_depth: 3
+    toc_appendix: true
+    fig_caption: yes
 ---
 
 ```{r global options, include = FALSE}
@@ -20,12 +28,23 @@ library(ggplot2)
 library(stargazer)
 library(sandwich)
 library(kableExtra)
+library(data.table)
+library(ggplot2)
+library(reshape)
+library(readxl)
+library(stringr)
+library(stargazer)
+library(reshape)
+library(data.table)
+library(sandwich)
+library(lmtest)
+library(png)
+library(knitr)
 
-data <- read_excel("~/w241/Olive_Oil_Taste_Test/data/final_data/de-identified_data.xlsx")
+data <- data.table(read_excel("~/Olive_Oil_Taste_Test/data/final_data/de-identified_data.xlsx"))
 
 df<-data %>% 
   filter(!is.na(better_smell)) %>%
-  rename(gender=sex) %>%
   mutate(age=ifelse(age=='18 to 24' | age=='25 to 34', '18 to 34', ifelse(age =='35 to 44' | age=='45 to 54', '35 to 54','55 or older')),
          country_of_birth=ifelse(birth_country != 'USA' & birth_country != 'Turkey' , 'Other', birth_country),
          covid=ifelse(covid=='Yes',1,0),
@@ -37,60 +56,333 @@ df<-data %>%
          preferred_olive_oil_2=ifelse(better_taste ==2,1,0),
          second_olive_oil=first_oo,
          treatment=ifelse(azzignment =='treatment',1,0))
+
+df[, better_smell2 := ifelse(better_smell == 'Olive_oil_2', 1, 0)]
+df[, more_bitter2 := ifelse(more_bitter == 'Olive_oil_2', 1, 0)]
+
+# Adding treatment_nm column
+df[, treatment_nm := ifelse(treatment==0 & first_oo==0, 'Recieved Factual\nMessage & Olive\nOil #1 First', 
+                           ifelse(treatment==0 & first_oo==1, 'Recieved Factual\nMessage & Olive\nOil #2 First', 
+                                  ifelse(treatment==1 & first_oo==0, 'Recieved Marketing\nMessage & Olive\nOil #1 First',
+                                         ifelse(treatment==1 & first_oo==1, 'Recieved Marketing\nMessage & Olive\nOil #2 First', 'none'))))]
+
+
 olive_oil2_df<-df%>%filter(second_olive_oil==1)
 olive_oil1_df<-df%>%filter(second_olive_oil==0)
 ```
+*Please note the letters in parentheses correspond to the shorthand for that variable name in our regression equations: (letter) = variable name in regression.*
 
-\section{Abstract}
+\newpage
+# Abstract
+Do positive marketing messages influence a consumer’s preference of a product? Many experiments have been conducted on how expectations influence perception. These experiments have shown that people’s level of enjoyment is impacted by the cues that they are given before consumption. To examine this theory, we conducted The Olive Oil Taste Test, a two-factor deception design field experiment. Participants were asked to taste two samples of the same olive oil in a randomized order under the guise the oils were different. Participants in treatment were given a marketing message regarding one of the olive oil samples, indicating it was superior in quality. Participants in control were given an alternative factual message. We performed analysis using linear regression in R Studio. The results of our experiment show that participants do not tend to favor an olive oil with a marketing message. This outcome leads us to conclude that marketing messages do not have an effect on a consumer’s enjoyment of a product. However, there are reasons to remain skeptical about these results. The most important reason being a low powered experiment, given the small sample size and lukewarm marketing message. Despite our results, we believe that it may be worthwhile to reproduce this experiment with a large sample and a potent marketing message to produce more robust results.
 
-\section{Introduction}
-Our society equates higher quality, expensive experiences and items as superior and thus more enjoyable. Global businesses spend countless hours researching the ideal product messaging in advertisements to draw in potential consumers for products to increase sales. In a paper from the Aarhus School of Business, researchers investigated perceptions of quality among consumers from multiple studies spanning decades. One of the studies from 1994 was interested in studying the demand for Danish milk products in Northern Germany (Baadsgaard, Grunert, Grunert & Skytte). A conjoint analysis of geographic origin, type, and packaging was performed with 100 participants using survey methods. Researchers found that the quality perception of foods like cheeses were highly influenced by geographical origin but not for butter or milk. 
+# Introduction
+Our society equates higher quality, expensive experiences and items as superior and thus more enjoyable. Global businesses spend countless hours researching the ideal product messaging in advertisements to draw in potential consumers for products to increase sales. In a paper from the Aarhus School of Business, researchers investigated perceptions of quality among consumers from multiple studies spanning decades. One of the studies from 1994 was interested in studying the demand for Danish milk products in Northern Germany. A conjoint analysis of geographic origin, type, and packaging was performed with 100 participants using survey methods. Researchers found that the quality perception of foods like cheeses were highly influenced by geographical origin but not for butter or milk.^[Brunsø, Fjord and Grunert, ["CONSUMERS’ FOOD CHOICE AND QUALITY PERCEPTION"](https://pure.au.dk/portal/files/32302886/wp77.pdf/)] 
 
-From these studies, our research team is interested in investigating if positive messaging related to product characteristics such as price or geographic origin of production can influence the enjoyment through ‘priming methodologies’ (Ariely et al., 2006). To study these effects, we conducted a two-factor deception field experiment of taste tests with olive oil as it is typically lesser known than other food products like wine and coffee. Therefore, by positively influencing the perception of product quality through marketing messaging, we believe those in treatment will rate an olive oil positioned as higher in quality to be more enjoyable and favored. We analyzed our findings through linear regression within R studio.
+From these studies, our research team is interested in investigating if positive messaging related to product characteristics such as price and geographic origin of production can influence the enjoyment of consumption.^[Lee, Frederick and Ariely, ["Try It, You’ll Like It: The Influence of Expectation, Consumption, and Revelation on Preferences for Beer"](https://pubmed.ncbi.nlm.nih.gov/17201787/)] To study these effects, we conducted a two-factor deception field experiment with olive oil. We believe that pre-existing olive oil preferences would be largely undetermined given that it is typically not consumed on its own, unlike other food products like wine and coffee. Therefore, by positively influencing the perception of product quality through marketing messaging, we believe those in treatment will rate an olive oil positioned as higher in quality to be more enjoyable. 
+\newpage
 
-\section{Research Question}
-
-Our primary research question is: Does positive marketing influence a consumer’s preference of a product?
-
-\subsection{Sub-questions}
-Our descriptive questions related to our primary research question are:
+# Research Question
+Our primary research question is: **Do positive marketing messages influence a consumer’s preference of a product?**
+\
+\
+Our descriptive sub-questions related to our primary research question are:
 
 1. Do positive marketing messages influence the smell of a product to sway preference?
 2. Do cues regarding a lack of bitterness impact people’s perception of the bitterness of a product?
 
+# Hypothesis
+**A positive marketing message for a product will cause consumers to prefer the experience of consuming that product.**
 
-\section{Hypothesis}
-A positive marketing message for a product will cause consumers to prefer the experience of consuming that product.
+# Experiment Design
+The olive oil taste test is a between-subject, two-factor, deception design conducted with a convenience sample of local family and friends. In this experiment, our sample of family and friends is our population of interest. The two factors were: product messaging received (factual or marketing message) and olive oil sample tasting order. Participants were split amongst the four groups as detailed in the table below.
 
-\section{Experiment Design}
-The olive oil taste test is a between-subject, two-factor, deception design conducted with a convenience sample of local family and friends. In this experiment, our sample of family and friends is our population of interest. The two factors were: product messaging received (factual or marketing message) and olive oil sample tasting order. Participants were split amongst the four groups as detailed in the table below:
+```{r, fig.cap="Two-Factor Table", out.width="100%"}
+twofac_tbl="../Olive_Oil_Taste_Test/pics/twofactor_table.png"
+include_graphics(twofac_tbl)
+```
 
 The deception is that participants were told they were tasting two different olive oils, when they were actually tasting the same olive oil. This deception was a necessary aspect of the design to ensure that the only treatments in the experiment were the marketing messages and the sample tasting order.
 
-\subsection{Experiment Procedure}
-Participants were told that we (the authors) were conducting an olive oil taste test for the purpose of product research regarding great tasting olive oils. Prior to the experiment, participants were randomized into one of the four treatment groups and given a Stable Unit Treatment Value Assumption (SUTVA) Agreement. The SUTVA Agreement asked participants to remain silent during the experiment and to never discuss the experiment with anyone. Upon signing the agreement, participants were given a pre-experiment survey asking questions such as, if the participant had covid in the last two years, how many olive oil tastings they previously participated in, as well as immutable characteristics like their age. Each participant was run through the experiment individually in an Olive Oil Tasting Room separate from any other participants to eliminate interference between subjects. 
+## Experiment Procedure
+Participants were told that we (the authors) were conducting an olive oil taste test for the purpose of product research regarding great tasting olive oils. Prior to the experiment, participants were randomized into one of the four treatment groups and given a Stable Unit Treatment Value Assumption (SUTVA) Agreement (see Appendix). The SUTVA Agreement asked participants to remain silent during the experiment and to never discuss the experiment with anyone. Upon signing the agreement, participants were given a pre-experiment survey (see Appendix) asking questions such as, if the participant had COVID-19 in the last two years, how many olive oil tastings they previously participated in, as well as immutable characteristics like their age. Each participant was run through the experiment individually in an Olive Oil Tasting Room separate from any other participants to eliminate interference between subjects. 
+
+Once in the Olive Oil Tasting Room, the experimenter (one of the authors) would conduct the experiment and collect participant outcomes reading from a script (see Appendix). Participants were given two clear shot glasses of the same olive oil, marked 1 and 2 with a black marker. The experimenter told participants which olive oil to taste first and that they would only be able to smell and taste the oils one time. Once the ground rules were established, the experimenter recited to the participant their randomly assigned message. Once the message was given, the experimenter asked the participant to smell and taste the oils in the respective order and asked participants their preferences between the two oils. Once the experiment was completed participants were thanked and left the Olive Oil Tasting Room. 
+
+The ROXO grammar further illustrates our experiment design. It breaks down our non randomized group N, by randomly assigned participants into those who will be tasting olive oil #1 first and second. Then N is again randomly assigned to receive either a marketing or factual message (X$ vs O) and measure our 4 outcomes. 
+
+```{r, fig.cap="ROXO Grammar", out.width="100%"}
+roxo_gram="../Olive_Oil_Taste_Test/pics/ROXO_grammar.png"
+include_graphics(roxo_gram)
+```
 
 
-Once in the Olive Oil Tasting Room, the experimenter (one of the authors) would conduct the experiment and collect participant outcomes reading from a script (see Appendix). Participants were given two clear shot glasses of the same olive oil, marked 1 and 2 with a black Sharpie. The experimenter told participants which olive oil to taste first and that they would only be able to smell and taste the oils one time. Once the ground rules were established, the experimenter recited to the participant their randomly assigned message. Once the message was given, the experimenter asked the participant to smell and taste the oils in the respective order and asked participants their preferences between the two oils. Once the experiment was completed participants were thanked and left the Olive Oil Tasting Room. 
+## Placebo & Treatment Messages (M)
+As we covered in the previous section, to test the theory, we asked both our participants to taste the same olive oil without disclosing they were tasting the same olive oil. The control group was given a factual description about olive oil #2 and the treatment group was given the same message with a positive spin. We hypothesized that providing a compelling marketing message regarding the desired properties of the olive oil such as price and expert opinion, using language like “best in the world”, would subconsciously influence the subjects to think that oil is tastier. We expected participants to show preference towards the olive oil with the more positive description. Through this we aimed to test the impact of positive expectations on level of enjoyment.
+\newpage
+The script we used to run the experiment included the following factual and marketing messages:
 
-The ROXO grammar further illustrates our experiment design. It breaks down our non randomized group N, by randomly assigned participants into participants who will be tasting olive oil 1 first vs 2nd. Then we have these randomly assigned groups into treatment vs control (X$ vs O) and measure our 4 outcomes. 
+**[Control] Great, so a little info about olive oil #2. It’s a Spanish extra virgin olive oil. Because it’s extra virgin, the bitterness you taste may be affected.**\
 
-\subsection{Details on Placebo/Treatment Messages (M)}
+**[Treatment] Great, so a little info about olive oil #2. It’s a very special Spanish extra virgin olive oil. Spanish olive oil is a bit pricey since it is considered to be the best in the world.  And because it’s extra virgin, you might taste a little less bitterness.**
 
-\subsection{Outcome Measures}
+## Outcome Measures
+To explore the aforementioned research questions, we measured the following outcome variables.
 
 ### Preferred Taste (T)
-Preferred taste was the main outcome variable in this experiment and the last outcome measure collected in the experiment procedure. Before the experiment began, participants were told that a few lucky individuals would receive a sample of their preferred olive oil. During the experiment, after sipping the olive oils, we asked participants, “... which olive oil would you prefer a sample of?”. This question motivated a binary response, where the participant could choose either olive oil 1 or 2. Because we had promised the participants may get a sample of their preferred olive oil, this measure was behaviorally aligned, making it a trustworthy measure of preference. 
+Preferred taste was the main outcome variable in this experiment and the last outcome measure collected in the experiment procedure. Before the experiment began, participants were told that a few lucky individuals would receive a sample of their preferred olive oil. During the experiment, after sipping the olive oils, we asked participants, “... which olive oil would you prefer a sample of?”. This question motivated a binary response, where the participant could choose either olive oil #1 or #2. Because we had promised the participants may get a sample of their preferred olive oil, this measure was behaviorally aligned, making it a trustworthy measure of preference. 
 
-\subsection{Sample Recruitment}
+### Preferred Smell (S)
+Preferred smell was a secondary outcome variable and the first outcome measure collected in the experiment procedure. We were interested in measuring preferred smell because of the close relationship between taste and smell perception. Olfactory stimulation can be triggered through two routes, one through the nose and the other through the mouth. This stimulation heightens perceptions of taste^[Kakutani, Narumi, Kobayakawa, Kawai, Kusakabe, Kunieda, and Wada, ["Taste of breath: the temporal order of taste and smell synchronized with breathing as a determinant for taste and olfactory integration"](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5566545/)]. Measuring the preference of smell could help isolate a specific aspect of the consumption experience. We hypothesized that because smell represents a part of the taste sense, a marketing message could have a larger impact on smell preference than on taste preference. 
 
-\subsection{Randomization Strategy}
+In the experiment procedure, participants were first asked to smell the oils in their assigned order and the experimenter would prompt, “Which olive oil smells better? ”, soliciting a binary response of either olive oil #1 or #2. This measure was not behaviorally motivated like our main outcome measure. Additionally, the value of this measure’s outcomes are questionable, as many of our participants did not fully understand that they would only be able to smell and taste each oil one time. However, because this was our first measure, participants quickly learned the process for the experiment, and were more prepared to accurately respond to the proceeding questions. 
 
-\subsection{Pre-Treatment Covariates}
+### More Bitter (B)
+More bitter was the second outcome variable we measured. The effect of marketing messages on bitterness has been documented in a study regarding coffee by Olson and Dover. This study used marketing messages to attempt to persuade adult women that a new coffee was less bitter when it was about the same bitterness as any other coffee brand^[Olson and Dover, ["Cognitive Effects of Deceptive Advertising"](https://www-jstor-org.libproxy.berkeley.edu/stable/3150398?seq=9)]. We thought we might be able to test a similar effect by asking participants, “Which olive oil tastes more bitter?”. Even though at this point, participants understood that they would only be able to taste the oils one time, there was some confusion about what “bitter” meant. The oil they tasted had a fairly peppery flavor and so it was a common question whether peppery meant bitter. This outcome measure was not behaviorally motivated.
 
-\section{Results}
+## Sample Recruitment
+Typically sampling randomly from a large population is unlikely in field experiments. In the case of this experiment, due to the Omicron variant wave of COVID-19 we were not able to go to more public places like farmers markets, school campus or workplace etc as planned to recruit from a larger pool of participants at random. Instead, we reached out to close friends and family for convenience sampling and conducted several olive oil tasting sessions. We are aware that convenience sampling may cause sampling bias, as subjects obtained through this recruitment method might have systematically larger or smaller ATEs than subjects in the population. For example, recruiting from a highly educated pool of participants that work mostly in technical positions and are knowledgeable about experimentation might have caused our sample to be less susceptible to our deception design. Lastly this sample was drawn from the Bay Area, Arkansas and New York City in the same time period from February to April 2022. The population of interest in this experiment is our sample population. Therefore, we do not aim to make further generalizations in this experiment.
 
-\subsection{Overview}
+## Randomization Strategy
+As stated before, this experiment was a two-factor design. Before taking any participant into the Olive Oil Tasting Room, they were randomly assigned to either the factual or marketing message, and were also randomly assigned to taste olive oil #1 or #2 first. This experiment also had rolling enrollment for four weeks. Therefore, new participants were randomly assigned to treatment or control groups on a weekly basis. 
+
+The randomization process first separated participants into factual or marketing message groups utilizing complete random assignment. This particular randomization methodology ensured a relatively equal distribution of participants within groups given our small sample size. Then participants were assigned their order of olive oil sample tasting using simple binomial randomization.
+
+In the flowchart below, you can see that our complete randomization of messages produced relatively even sized groups. On the other hand, the binary randomization of olive oil sample order produced even sized groups in the entire sample, but did not produce even sized groups within each message group. 
+
+```{r, fig.cap="Random Assignment Flowchart", out.width="100%"}
+flowchart="../Olive_Oil_Taste_Test/pics/flowchart.png"
+include_graphics(flowchart)
+```
+
+## Pre-Treatment Covariates
+Before administering the experiment, participants completed a pre-experiment survey via Google Form to disclose pre-treatment covariates: age, country of origin, whether they had COVID-19, and the number of olive oil tastings they had participated in previously. This was information we thought could be correlated with our outcome variable and we were particularly interested in prior experience with olive oil tasting and if they had COVID-19 in the past 2 years. 
+
+```{r, fig.cap="Full Model Correlation", warning=FALSE}
+## Correlation Matrix!!
+numeric_data <- df[, c("gender", "num_oo_tastings", "covid", "treatment", "second_olive_oil", "better_smell2", "more_bitter2", "preferred_olive_oil_2")]
+colnames(numeric_data) <- c("Gender (G)", "Olive Oil Tasting Experience (E)", "Had COVID-19 (C)", "Message (M)", "Olive Oil Order (O)", "Preferred Smell (S)", "More Bitter (B)", "Preferred Taste (T)")
+
+# Create a correlation dataframe
+raw_corr_data <- cor(numeric_data)
+rounded_corr_data <- round(raw_corr_data, 2)
+
+# Get upper triangle of the correlation dataframe
+get_upper_tri <- function(corr_matrix){
+  corr_matrix[lower.tri(corr_matrix)]<- NA
+  return(corr_matrix)}
+
+upper_tri <- get_upper_tri(rounded_corr_data)
+
+melted_cor_matrix <- melt(upper_tri, na.rm = TRUE) # flatten correlation dataframe
+
+# Generate correlation heatmap
+full_model_corr_matrix <- ggplot(data = melted_cor_matrix, aes(X2, X1, fill = value)) + 
+  geom_tile(color = "white") +
+  labs(title = "Full Model Correlation Matrix", x='', y='') +
+  scale_fill_gradient2(low = "#bad824", high = "#5a8a00", mid = "white",
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 10)) +
+  theme(legend.key.size = unit(1, 'cm')) +
+  coord_fixed()
+full_model_corr_matrix # Print correlation heat map
+```
+
+As shown in the correlation matrix above, we did not see a strong correlation between our covariates. There was a slight negative correlation (<0.5)  between olive oil tasting order and message assignment, although both variables were randomized. This calls into question our randomization methodology because had our randomization worked correctly, we should not have seen any correlation between these two randomly generated values. There was also a slight positive correlation between having COVID-19 last 2 years and olive oil tasting order (<0.5). We will further investigate covariate balance among our four treatment groups. 
+\newpage
+
+### Olive Oil Tasting Experience (E)
+We asked participants how many olive oil tastings they had previously participated in to gauge participant familiarity with olive oil and to be able to test for heterogeneous treatment effects. As shown in the chart below, the majority of our participants had little prior experience tasting olive oils. 
+\
+\
+
+```{r, fig.cap="Olive Oil Tasting Experience (E) Covariate Balance Check", warning=FALSE}
+# Check on tasting_count Distributions
+melted_num_oo_tastings_data <- data.table(melt(df[, table(treatment_nm, by=(num_oo_tastings))], id=c("treatment_nm")))
+melted_num_oo_tastings_data <- melted_num_oo_tastings_data[order(rank(treatment_nm))]
+
+# Build title.
+num_oo_tastings_title = 'Majority of sample had little prior experience tasting olive oil.\nDistribution among treatment groups was relatively equal.'
+
+# Build Plot.
+ggplot(melted_num_oo_tastings_data, aes(fill=as.factor(by), y=value, x=treatment_nm)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  ggtitle(num_oo_tastings_title) +
+  scale_x_discrete(name = "", labels = c('Recieved Factual\nMessage & Olive\nOil #1 First', 'Recieved Factual\nMessage & Olive\nOil #2 First', 'Recieved Marketing\nMessage & Olive\nOil #1 First', 'Recieved Marketing\nMessage & Olive\nOil #2 First'), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c('0 Tastings', '1+ Tastings'), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 2)) +
+  geom_text(aes(x=c(.77, 1.23, 1.77, 2.23, 2.77, 3.23, 3.77, 4.23), 
+                label = melted_num_oo_tastings_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+```
+
+\newpage
+
+### COVID-19 (C)
+Because COVID-19 has an effect on the smell and taste, we wished to investigate any heterogeneous treatment effects. About a fourth of our participants had COVID-19 in the past two years. We did not test anyone who had COVID-19 at the time and there is no evidence that any of our participants contracted COVID-19 while participating in our study. 
+\
+\
+```{r, fig.cap="COVID-19 (C) Covariate Balance Check", warning=FALSE}
+# Check on Covid Distributions
+melted_covid_data <- data.table(melt(df[, table(treatment_nm, by=(covid))], id=c("treatment_nm")))
+melted_covid_data <- melted_covid_data[order(rank(treatment_nm))]
+
+# Build title.
+covid_title = 'Relatively even distribution of COVID-19 between treatment groups.'
+
+# Build Plot.
+ggplot(melted_covid_data, aes(fill=as.factor(by), y=value, x=treatment_nm)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  ggtitle(covid_title) +
+  scale_x_discrete(name = "", labels = c('Recieved Factual\nMessage & Olive\nOil #1 First', 'Recieved Factual\nMessage & Olive\nOil #2 First', 'Recieved Marketing\nMessage & Olive\nOil #1 First', 'Recieved Marketing\nMessage & Olive\nOil #2 First'), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c('Did Not Have COVID-19', 'Had COVID-19'), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 5)) +
+  geom_text(aes(x=c(.77, 1.23, 1.77, 2.23, 2.77, 3.23, 3.77, 4.23), 
+                label = melted_covid_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+```
+\newpage
+
+### Age (A)
+Our sample was composed of participants aged 18+. The majority of our sample was in the 18- 34 age group (41) followed by 55+ (22) and then 35 to 54 (19). As shown in the chart below, ages were not evenly distributed among the four treatment groups and there were no participants aged 55+ that received the marketing message and tasted olive oil #2 first. 
+\
+\
+
+```{r, fig.cap="Age (A) Covariate Balance Check", warning=FALSE}
+# Check on Age Distributions
+melted_age_data <- data.table(melt(df[, table(treatment_nm, by=(age))], id=c("treatment_nm")))
+melted_age_data <- melted_age_data[order(rank(treatment_nm))]
+
+# Build title.
+age_title = 'Age is not distributed evenly amongst the four treatment groups. This is\nparticularly evident in the group that received both marketing message\nand tasted olive oil #2 first.'
+
+# Build Plot.
+ggplot(melted_age_data, aes(fill=as.factor(by), y=value, x=treatment_nm)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  ggtitle(age_title) +
+  ylab("Number of Participants") + 
+  scale_x_discrete(name = "", labels = c('Recieved Factual\nMessage & Olive\nOil #1 First', 'Recieved Factual\nMessage & Olive\nOil #2 First', 'Recieved Marketing\nMessage & Olive\nOil #1 First', 'Recieved Marketing\nMessage & Olive\nOil #2 First'), guide = guide_axis(angle = 0)) +
+  scale_fill_manual(name = "", 
+                    labels = c('18 to 34', '35 to 54', '55+'), 
+                    values=c("#c8f259", "#83b300", "#597400"))+
+  scale_y_continuous(expand = c(0, 0, 0, 3)) +
+  geom_text(aes(x=c(.7, 1, 1.3, 1.7, 2, 2.3, 2.7, 3, 3.3, 3.7, 4, 4.3), 
+                label = melted_age_data[, value],
+                family = "Times"), 
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+```
+\newpage
+
+### Birth Country (BC)
+The majority of our sample was from the USA (45) & Turkey (17). Because we had very few participants from other countries, other countries were individually not distributed evenly between treatment groups, but when taken together were distributed evenly. 
+\
+\
+
+```{r, fig.cap="Birth Country (BC) Covariate Balance Check", warning=FALSE}
+# Check on Birth Country Distributions
+melted_birth_country_data <- data.table(melt(df[, table(treatment_nm, by=(country_of_birth))], id=c("treatment_nm")))
+melted_birth_country_data <- melted_birth_country_data[order(rank(treatment_nm))]
+
+# Build title.
+birth_country_title = 'Relatively even distribution of major countries of birth between\ntreatment groups.'
+
+# Build Plot.
+ggplot(melted_birth_country_data, aes(fill=as.factor(by), y=value, x=treatment_nm)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  # geom_bar(position="stack", stat="identity") +
+  ggtitle(birth_country_title) +
+  xlab("Participant Covid Status") + ylab("Number of Participants") + 
+  scale_x_discrete(name = "", labels = c('Recieved Factual\nMessage & Olive\nOil #1 First', 'Recieved Factual\nMessage & Olive\nOil #2 First', 'Recieved Marketing\nMessage & Olive\nOil #1 First', 'Recieved Marketing\nMessage & Olive\nOil #2 First'), guide = guide_axis(angle = 0)) +
+  #scale_fill_discrete(name="", labels = c('Other', 'Turkey', 'USA')) +
+  scale_fill_manual(name = "", 
+                    labels = c('Other', 'Turkey', 'USA'), 
+                    values=c("#c8f259", "#83b300", "#597400"))+
+  scale_y_continuous(expand = c(0, 0, 0, 2)) +
+  geom_text(aes(x=c(.7, 1, 1.3, 1.7, 2, 2.3, 2.7, 3, 3.3, 3.7, 4, 4.3), 
+                label = melted_birth_country_data[, value],
+                family = "Times"), 
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+```
+
+\newpage
+
+### Gender (G)
+There were 42 male and 40 female participants in the sample. The genders were relatively evenly divided between the four treatment groups. 
+\
+\
+
+```{r, fig.cap="Gender (G) Covariate Balance Check", warning=FALSE}
+# Check on gender Distributions
+melted_gender_data <- data.table(melt(df[, table(treatment_nm, by=(gender))], id=c("treatment_nm")))
+melted_gender_data <- melted_gender_data[order(rank(treatment_nm))]
+
+# Build title.
+gender_title = 'Relatively even distribution of genders between treatment groups.'
+
+# Build Plot.
+ggplot(melted_gender_data, aes(fill=as.factor(by), y=value, x=treatment_nm)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  ggtitle(gender_title) +
+  scale_x_discrete(name = "", labels = c('Recieved Factual\nMessage & Olive\nOil #1 First', 'Recieved Factual\nMessage & Olive\nOil #2 First', 'Recieved Marketing\nMessage & Olive\nOil #1 First', 'Recieved Marketing\nMessage & Olive\nOil #2 First'), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c('Male', 'Female'), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 4)) +
+  geom_text(aes(x=c(.77, 1.23, 1.77, 2.23, 2.77, 3.23, 3.77, 4.23), 
+                label = melted_gender_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+
+```
+\newpage
+
+# Results
+
+## Overview
 To assess if a causal relationship exists between positive messaging and product preference, we use regression analysis. In particular, we estimate the following models: 
 
 
@@ -99,50 +391,51 @@ T = \beta_0 + \beta_1M + \beta_2O
 \end{equation}
 
 \begin{equation} 
-T = \beta_0 + \beta_1M + \beta_2O + \beta_3M*0
+T = \beta_0 + \beta_1M + \beta_2O + \beta_3M*O
 \end{equation}
 
 \begin{equation}
-T = \beta_0 + \beta_1M + \beta_2O + \beta_3C + \beta_4T + \beta_5M*0
+T = \beta_0 + \beta_1M + \beta_2O + \beta_3C + \beta_4E + \beta_5M*O
 \end{equation}
 
 \begin{equation} 
-T = \beta_0 + \beta_1M + \beta_2O +  \beta_3C + \beta_4T + \beta_5M*0 +\beta_6M*C +\beta_7M*T +\beta_8O*C + \beta_9O*T
+T = \beta_0 + \beta_1M + \beta_2O +  \beta_3C + \beta_4E + \beta_5M*O +\beta_6M*C +\beta_7M*E +\beta_8O*C + \beta_9O*E
 \end{equation}
 
 
-where T indicates our outcome of interest which is preference to take home olive oil 2, M indicates our treatment variable - positive marketing messaging on olive oil 2, O indicates that a subject received the olive oil 2 first, C indicates that a subject has had a covid infection and T indicates that a subject has had olive oil tasting experience. 
+T indicates our outcome of interest which is preference to take home olive oil #2, M indicates our treatment variable, positive marketing messaging on olive oil #2, O indicates that a subject received the olive oil #2 first, C indicates that a subject has had a COVID-19 infection and E indicates that a subject has had olive oil tasting experience. 
 
-Given that the first sample showed a statistically significant effect for the order of olive oil tasting, we decided to conduct a sub group analysis to do a deeper exploration of our results. We estimate the following models: 
+Given that the first sample showed a statistically significant effect for the order of olive oil tasting, we decided to do a deeper exploration of our results. We conducted a subgroup analysis on data split by olive oil tasting order (O). We estimate the following models for our two subsets of data:
 
 \begin{equation}
 T = \beta_0 + \beta_1M 
 \end{equation}
 
 \begin{equation} 
-T = \beta_0 + \beta_1M + \beta_2C + \beta_3T
+T = \beta_0 + \beta_1M + \beta_2C + \beta_3E
 \end{equation}
 
 \begin{equation}
-T = \beta_0 + \beta_1M + \beta_2C + \beta_3T + \beta_4M*C + \beta_5M*T
+T = \beta_0 + \beta_1M + \beta_2C + \beta_3E + \beta_4M*C + \beta_5M*E
 \end{equation}
 
-Lastly, we examine the effect of the treatment effect on smell preference and perceived olive oil bitterness by estimating the following equations:
+Lastly, we examine the relationships between our treatments, smell preference and perceived olive oil bitterness by estimating the following equations:
 
 \begin{equation}
-S = \beta_0 + \beta_1M + \beta_2O + \beta_3C + \beta_4T
+S = \beta_0 + \beta_1M + \beta_2O + \beta_3C + \beta_4E
 \end{equation}
 
 \begin{equation}
-B = \beta_0 + \beta_1M + \beta_2O + \beta_3C + \beta_4T
+B = \beta_0 + \beta_1M + \beta_2O + \beta_3C + \beta_4E
 \end{equation}
 
-where S indicates the outcome preferred smell of olive oil 2 and  and B indicates the outcome found olive oil 2 more bitter.
+S indicates that the smell of olive oil #2 was preferred and B indicates that olive oil #2 was perceived as more bitter that olive oil #1. 
 
-\subsection{Causal Model}
-Table 1 shows the estimates from equations 1-4 that look at the overall impact of the treatment on product preference. We find no significant treatment effect from receiving positive marketing messaging on olive oil 2 compared with the control (factual message on olive oil 2) group. Similarly, receiving olive oil 2 first was no more or less effective on the subjects’ preference to take home olive oil 2. With respect to the pre-treatment covariates, having had a covid infection and olive oil tasting experience show no significant impact on the outcome. 
+\newpage
 
-Furthermore, all the interaction terms from these variables fail to indicate any statistically significant effect on subjects’ preference to take home olive oil 2.
+## Causal Model
+Table 1 shows the estimates from equations 1-4 that look at the overall impact of the treatment on product preference. We find no significant treatment effect from receiving positive marketing messaging on olive oil #2 compared with the control (factual message on olive oil #2) group. Similarly, receiving olive oil #2 first was no more or less effective on the subjects’ preference to take home olive oil #2. With respect to the pre-treatment covariates, having had a COVID-19 infection and olive oil tasting experience show no significant impact on the outcome. All the interaction terms from these variables fail to indicate any statistically significant effect on subjects’ preference to take home olive oil #2.
+
 ```{r,echo=FALSE, results='asis'}
 #Causal model analysis
 model1<-lm(preferred_olive_oil_2 ~ azzignment + second_olive_oil, data=df)
@@ -173,8 +466,11 @@ model_list=list(model1, model2, model3, model4)
   )
 ```
 
-\subsection{Sub-group Anlayis}
-We similarly find no effect from the positive marketing message on the subsamples for which subjects were assigned to taste olive oil 1 first or olive oil 2 first (regression results available in table 2 and table 3 for equations 5-7). However, we find that having olive oil tasting experience has a significant effect on the outcome for subjects assigned to taste olive oil 1 first. That is, subjects assigned to taste olive oil 1 and who had olive oil tasting experience were 2.83 percentage points less likely to prefer olive oil 2 to olive oil 1. The point estimate suggests that the magnitude of the effect is significant at the 1% significance level ( p < 0.1) and not at the 5% significance level. We fail to reject the null hypothesis and conclude that the observed differences may have simply been from chance. We also estimated the outcomes for the interaction terms positive marketing messaging on olive oil 2 and previously having  a covid infection, and receiving positive marketing messaging on olive oil 2 and having olive oil tasting experience. We detected a highly statistically significant effect for the interaction between positive marketing messaging on olive oil 2 and having olive oil tasting experience on preference to take home olive oil 2 (p <0.05) but the main effects for both positive marketing message on olive oil 2 and having olive oil tasting experience showed non-significant effects (p > 0.05). Given this case, this means that for both subsamples having olive oil tasting experience has no effect on preference for taking home olive oil 2 if the subject has not received positive marketing messaging on olive oil 2. Similarly, if the subject has no olive oil tasting experience, positive marketing messaging on olive oil 2 has no impact on whether a subject prefers to take home olive oil 2. The point estimates from the variables above are generally not significantly different from zero for group that received olive oil 2 first (p > 0.05)
+\newpage
+
+## Subgroup Analysis
+We similarly find no effect from the positive marketing message on the subgroups for which subjects were assigned to taste olive oil #1 first or olive oil #2 first (regression results available in Table 2 and Table 3 for equations 5-7). However, we find that having olive oil tasting experience has a significant effect on the outcome for subjects assigned to taste olive oil #1 first. That is, subjects assigned to taste olive oil #1 and who had olive oil tasting experience were 2.83 percentage points less likely to prefer olive oil #2 to olive oil #1. The point estimate suggests that the magnitude of the effect is significant at the 1% significance level ( p < 0.1). We also estimated the outcomes for the interaction terms positive marketing messaging on olive oil #2 and previously having  a COVID-19 infection, and receiving positive marketing messaging on olive oil #2 and having olive oil tasting experience. We detected a highly statistically significant effect for the interaction between positive marketing messaging on olive oil #2 and having olive oil tasting experience on preference to take home olive oil #2 (p <0.05) but the main effects for both positive marketing message on olive oil #2 and having olive oil tasting experience showed non-significant effects (p > 0.05). Given this case, this means that for both subsamples having olive oil tasting experience has no effect on preference for taking home olive oil #2 if the subject has not received positive marketing messaging on olive oil #2. Similarly, if the subject has no olive oil tasting experience, positive marketing messaging on olive oil #2 has no impact on whether a subject prefers to take home olive oil #2. The point estimates from the variables above are generally not significantly different from zero for group that received olive oil #2 first (p > 0.05).
+
 ```{r,echo=FALSE, results='asis'}
 #Causal model #Subgroup analysis olive oil #2
 model1a<-lm(preferred_olive_oil_2 ~ azzignment, data=olive_oil2_df)
@@ -192,13 +488,17 @@ model_lista=list(model1a, model2a, model3a)
   no.space=TRUE,
   header=FALSE,
   font.size = "small",
-  covariate.labels=c('Positive messaging on olive oil 2', 'Had covid', 'Olive oil tasting experience','Positive messaging on olive oil 2:Had covid', 'Positive messaging on olive oil 2:Olive oil tasting experience'),
+  covariate.labels=c('Positive messaging on olive oil 2', 'Had COVID-19', 'Olive oil tasting experience','Positive messaging on olive oil 2:Had covid', 'Positive messaging on olive oil 2:Olive oil tasting experience'),
   model.numbers =FALSE,
    dep.var.labels='Preferred to Take Home Olive Oil 2',
   omit.stat=c("f"),
   se=lapply(model_lista, function(x)sqrt(diag(vcovHC(x))))
  )
+```
 
+\newpage
+
+```{r,echo=FALSE, results='asis'}
 #Causal model #Subgroup analysis olive oil #1
 model1b<-lm(preferred_olive_oil_2 ~ azzignment, data=olive_oil1_df)
 model2b<-lm(preferred_olive_oil_2 ~ azzignment  + covid + num_oo_tastings, data=olive_oil1_df)
@@ -213,20 +513,20 @@ model_listb=list(model1b, model2b, model3b)
   no.space=TRUE,
   header=FALSE,
   font.size = "small",
-  covariate.labels=c('Positive messaging on olive oil 2', 'Had covid', 'Olive oil tasting experience','Positive messaging on olive oil 2:Had covid', 'Positive messaging on olive oil 2:Olive oil tasting experience'),
+  covariate.labels=c('Positive messaging on olive oil 2', 'Had COVID-19', 'Olive oil tasting experience','Positive messaging on olive oil 2:Had covid', 'Positive messaging on olive oil 2:Olive oil tasting experience'),
   model.numbers =FALSE,
   dep.var.labels='Preferred to Take Home Olive Oil 2',
   omit.stat=c("f"),
   se=lapply(model_listb, function(x)sqrt(diag(vcovHC(x))))
  )
-
 ```
 
+\
+We fail to reject the null hypothesis that positive marketing messages have no impact on consumer enjoyment and conclude that the observed differences may have simply been from chance.
 
+## Descriptive Models
+Table 4 shows the estimates from equations 8-9, which target the sub-questions posed in the research question section. The coefficients indicate that receiving positive marketing messaging on olive oil #2, tasting olive oil #2 first, having had a COVID-19 infection and olive oil tasting experience have no significant impact on either preference for the smell of olive oil #2 or finding olive oil #2 more bitter. 
 
-
-\subsection{Descriptive Models}
-Table 4 shows the estimates from equations 8-9, which target the sub-questions posed in the research question section. The coefficients indicate that receiving positive marketing messaging on olive oil 2, tasting olive oil 2 first, having had a covid infection and olive oil tasting experience have no significant impact on either preference for the smell of olive oil 2 or finding olive oil 2 more bitter. As such we can state that the study does not demonstrate that positive marketing messaging influences olive oil product preference based on bitterness or smell.
 ```{r,results='asis'}
 #Descriptive model olive oil #1
 model3<-lm(better_smell ~ azzignment +covid +num_oo_tastings, 
@@ -255,29 +555,317 @@ model_list2=list(model3, model4)
   se=lapply(model_list2, function(x)sqrt(diag(vcovHC(x))))
  )
 ```
+\newpage
 
 
-\section{Discussion/Critique}
-\subsection{Low Power Experiment}
-\subsection{Deception Design}
-\subsection{Measurements}
-\subsection{Unfair Randomization Methodology and  Unmanaged Attrition}
-\subsection{Interference}
-\subsection{Differences in Experiment Administration}
+# Discussion/Critique
+In this section we present reasons to doubt our results and highlight areas of improvement for our study.
 
-\section{Conclusion}
+## Low Power Experiment
+The experiment we conducted was under powered. When we initially designed the experiment, we imagined that our control group would be given no information about either olive oil #1 or #2 and our treatment group would hear a positive marketing message about olive oil #2. While iterating over this simple design we found that by testing no information against a positive marketing message imposed two treatments. The first treatment was getting some information about an olive oil and the second treatment was hearing the positive spin. To isolate the effect of positive messaging, we chose to give the control group a placebo message which only contained facts about olive oil #2. This decision allowed us to isolate our treatment of interest, but also reduced the power of our treatment. Furthermore, we anticipated getting a sample size of about 80 participants due to our convenience sampling procedure. Because we did not anticipate getting many participants in this study in addition to the lack of a powerful treatment likely resulted in a non-significant result. However, even though the treatment was not powerful, it did target the specific intervention we wished to study. 
 
-\section{Bibliography}
+If we were to conduct this experiment again, we would spend more time working on making our treatment message more compelling. For example, we might tell the participants in treatment that olive oil #2 costs $150 a bottle and was given an award of excellence from the North American Olive Oil Association.^[North American Olive Oil Association, ["North American Olive Oil Association Website"](https://www.aboutoliveoil.org/)] Alternatively, we could test a number of different treatment messages to isolate specific effects.
 
-1. Field Experiments Cognitive Effects of Deceptive Advertising https://www-jstor-org.libproxy.berkeley.edu/stable/3150398?seq=9 
-2. Taste of breath: the temporal order of taste and smell synchronized with breathing as a determinant for taste and olfactory integration https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5566545/
-3. 'Long Covid': Why are some people not recovering? https://www.bbc.com/news/health-54296223
-4. Try It, You’ll Like It The Influence of Expectation, Consumption, and Revelation on Preferences for Beer https://pubmed.ncbi.nlm.nih.gov/17201787/
-5. How Consumers are Affected by the Framing of Attribute Information Before and After Consuming the Product https://www.jstor.org/stable/2489471
-6. The Generation of Sensory Expectation By External Cues and Its Effect on Sensory Perception and Hedonic Ratings: A Review https://www.researchgate.net/publication/227766594_The_generation_of_sensory_expectation_by_external_cues_and_its_effect_on_sensory_perception_and_hedonic_ratings_A_review
-7. How Soy Labeling Influences Preference and Taste https://www.sciencedirect.com/science/article/abs/pii/S1096750800000318
-8. North American Olive Oil Association Website https://www.aboutoliveoil.org/
-9. CONSUMERS’ FOOD CHOICE AND QUALITY PERCEPTION https://pure.au.dk/portal/files/32302886/wp77.pdf/ 
-10. The keys to increasing the consumption of olive oil in the US https://www.aboutoliveoil.org/the-keys-to-increasing-the-consumption-of-olive-oil-in-the-us
+Under the assumption that we have a more powerful treatment message, we hypothesize a .05 treatment effect, meaning that with the positive marketing message, 5% more participants in treatment would prefer olive oil #2 compared to the control group with the placebo message. To capture this effect, we ran a power analysis and found that we would need about 5,000 participants in this hypothetical experiment.  
 
+```{r Make functions for power analysis, include=TRUE, echo=FALSE} 
+# Function to generate fake data...
+make_data <- function(N=2000, ate=.5) { 
+  control <- data.table(
+    'azzignment' = c(rep('Control',N/2)), 
+    'better_taste' = c(sample(c(rep(0,N/4), rep(1,N/4)))))
+  treatment <- data.table(
+  'azzignment' = c(rep('Treatment',N/2)), 
+  'better_taste' = c(sample(c(rep(0,(N/4)-(ate*N/2)), rep(1,(N/4)+(ate*N/2))))))
+  d <- rbind(control, treatment)
+  return(d)
+}
+
+# Function to get the random inference p-value.
+ri_p_value <- function(d = fake_pop_data, simulations=0, sample_size=5) { 
+  p_value_vec <- NA
+  for (simulation in 1:simulations) {
+    sample_random_assignment <- d[ , .(better_taste = sample(better_taste, sample_size, replace=TRUE))
+                                   , by = azzignment]
+    p_value <- t.test(better_taste ~ azzignment, 
+                      sample_random_assignment)$p.value
+    
+    p_value_vec[simulation] <- p_value
+    }
+  return(p_value_vec)
+  }
+
+# Function to perform randomized inference on p-values of a Two Sample Welch 
+# T-Test on a percentage of the sample. 
+get_n_p_value_rejects <- function(N=0, d=fake_pop_data) { 
+  sample_size_per_group <- N/2
+  n_t_test_p_values <- ri_p_value(d, 1000, sample_size_per_group)
+  n_t_test_rejects <- mean(n_t_test_p_values <= .05)
+  return (n_t_test_rejects)}
+```
+
+```{r, fig.cap="Power Analysis", include=TRUE, echo=FALSE, fig.width=7, fig.height=3.7}
+# Generate fake data.
+fake_pop_data <- make_data(10000, .05)  
+
+# Populate the percent p-value rejects vector.
+N_to_sample <-  c(80, 100, 250, 500, 1000, 1500, 2000, 2500, 3000, 5000, 7500, 10000)
+n_p_value_rejects <- NA
+
+for (i in 1:length(N_to_sample)) {
+  n_p_value_rejects[i] <- get_n_p_value_rejects(N_to_sample[i], fake_pop_data)
+}
+n_p_value_rejects_dt <- data.table(N_to_sample, n_p_value_rejects)
+
+# Plot results!
+ggplot(data=n_p_value_rejects_dt, aes(x=N_to_sample, y=n_p_value_rejects, group=1))+
+  geom_line(color="#83b300") +
+  geom_point(color="#83b300") +
+  scale_y_continuous(labels = scales::percent, expand = c(0, 0, 0, .01)) +
+  labs(
+      title = "% of P Values that Reject the Null Hypothesis by Sample Size Assuming a 5%\nAverage Treatment Effect of Marketing Messages on Olive Oil Preference.",
+      x = 'N of the Population Sampled', 
+      y = "% of P-Values that Reject the Null") +
+    theme_bw() + 
+    theme(text=element_text(family="Times")) +
+    theme(title = element_text(size = 10.5)) + 
+    theme(axis.title = element_text(size = 10))
+```
+
+\newpage
+## Deception Design
+Another flaw in our experiment is that the deception design requires that our participants are deceived. However, we did not conduct any kind of check to ensure our deception worked. Believing that the two olive oils are different is key to the experiment because we are asking participants for their preference between the two given the positive marketing message. If the participants were not fooled by our experiment, then they might not have had a preference between oils and may have been pressured to give a binary response that was not honest. 
+
+As a deception check, we could screen participants before conducting the real olive oil taste test. To do this, we would need a very large sample of participants. The screening process could be a triangle test, where the participant is given three olive oils, two of them are the same and one is different. If the participant can tell which two olive oils are the same, then we would screen them out of the experiment because these participants are less likely to be deceived. If the participant incorrectly identifies the different oil, we will continue on to the main olive oil experiment. 
+
+## Measurements
+Our measurement issue is that we did not have a way to differentiate between a guessed response and a true preference between oils. Because our measurements relied on the participant being about to remember what the two olive oils smelled and tasted like, it is possible participants did not remember and provided a guessed response. Furthermore, we had no way of knowing if a person had no preference between oils because we only asked the participant if they preferred olive oil #1 or #2. Some participants did report they sensed no difference between the oils but these were unprompted responses. In an ideal experiment, we would give participants the option to say they had no preference when collecting responses. Again, we would only be able to do this with a large enough sample size. Even though giving participants the option to give a neutral response will reduce the amount of meaningful data we would collect, it would make our analysis more trustworthy because we would be collecting more honest responses.  
+
+## Unfair Randomization Methodology and  Unmanaged Attrition
+Unfair randomization methodology and unmanaged attrition were unfortunate procedural errors that make our results less trustworthy. In order to draw causal inference in a potential outcomes framework, it is assumed that every participant has an equal opportunity to be placed in either the control or treatment groups. The reason why this is such an important assumption is because it allows us to transcend heterogeneity in our treatment and control groups. Random assignment to treatment and control groups should guarantee that our treatment and control groups are like mirror images to each other when it comes to covariates and potential outcomes. 
+
+\newpage
+
+First of all, our random assignment methodology did not produce equal numbers of people in each of the four treatment groups in our 2-factor design. Furthermore, the covariate balance between the four treatment groups was questionable, most likely due to small sample size. Because our randomization methodology did not produce mirror image groups, we have reason to doubt that our data is devoid of heterogeneity. 
+
+```{r, fig.cap="Randomization Check", warning=FALSE}
+### Randomization Check
+melted_first_oo_data <- data.table(melt(df[, table(treatment, by=(first_oo))], id=c("treatment")))
+melted_first_oo_data[, treatment := ifelse(treatment==0, "Factual Message\n(Control)", "Marketing Message\n(Treatment)")]
+melted_first_oo_data <- melted_first_oo_data[order(rank(treatment))]
+
+# Build title.
+first_oo_title = 'Binomial randomization of first olive oil produced uneven partitions within\nmessage groups.'
+
+# Build Plot.
+ggplot(melted_first_oo_data, aes(fill=as.factor(by), y=value, x=treatment)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  ggtitle(first_oo_title) +
+  scale_x_discrete(name = "", labels = c("Factual Message\n(Control)", "Marketing Message\n(Treatment)"), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c("Tasted OO #1 First", "Tasted OO #2 First"), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 3)) +
+  geom_text(aes(x=c(.77, 1.23, 1.77, 2.23), 
+                label = melted_first_oo_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+```
+
+The main culprit of our failure to randomize evenly was the binomial randomization of the order of olive oil tasting. As you can see in the image above, almost two thirds of the people in our control group tasted olive oil #2 first and almost two thirds of people in our treatment group tasted olive oil #1 first. To solve this problem in a small sample size we could have used complete randomization blocked by treatment assignment to produce evenly randomized groups. However, if in a future experiment we expected to have a large sample size, the binomial randomization should partition the groups more evenly. 
+
+Having established our randomization methodology failed to evenly partition our data, we also must address procedural missteps that were taken which impacted the probabilities of treatment assignment as well as made attrition a small issue in our experiment. 
+
+To organize participants, we had a participant spreadsheet where we recorded the names of all the people we thought could be participants in this study. Periodically, we would update the list of names with new participants and randomize those participants to treatment groups. The problem is that sometimes we would realize that we were not going to be able to test someone on the list and we would replace their name with a new person we knew would be able to be tested. 
+
+By replacing names on the list, we made it very difficult to figure out how many potential outcomes we anticipated but were missing. We do not believe that attrition is an issue in this experiment because we are only interested in participants who are willing to participate in the study. However, our record keeping was not comprehensive, which is an unfortunate flaw in the experiment procedure. The bigger issue with our problematic record keeping is that it impacted randomization in our study. Choosing who got to stay in the spreadsheet and who was replaced caused the probability of being sorted into one of the four treatment groups to no longer be a completely random process. 
+
+In the future, to avoid these issues, we propose creating a potential participant spreadsheet where we list all our imagined participants. Upon getting confirmation from the participant that they will participate in the study, we will add them to our participant spreadsheet and then perform the randomization. 
+
+## Interference
+
+Despite having our participants sign a SUTVA Agreement to remain silent about the experiment, we do not naively assume our participants had no impact on each other. Several different kinds of interference likely occurred during this experiment despite our best efforts. 
+
+### Communication
+Communication interference is when information about the treatment spreads from treatment to control groups. This is exactly the kind of interference our SUTVA Agreement attempted to stop. However, it is entirely possible that participants did talk amongst themselves while another participant was being tested. Furthermore, many of our participants were from the same households and were not necessarily tested at the same time. Having groups of participants come over to be tested individually and having participants from the same household opened two  avenues for communication interference.
+
+### Social Comparison 
+Social comparison interference is when people in the control group compare themselves to people in the treatment group. This form of interference may have come into play when participants left the olive oil tasting room and rejoined the group of participants. Some of our participants had negative reactions to tasting olive oils, such as coughing, gagging and looking unhappy. These are all reactions that other participants potentially heard and saw that could have impacted their experiment results. We believe that social comparison interference may have caused participants to have decreased enjoyment of the olive oil tasting. We do not believe this interference biased our results in any particular direction. 
+
+### Experimenter to Participant Interference
+We believe that we (the authors) may have influenced the potential outcomes of some of the participants in our study. As we have stated before, our study used a sample of convenience, our participants were close friends and family. Because these were our close friends and family, they likely heard about our study and olive oils as we were planning our design. This additional information about olive oil and experiment may have swayed responses. But again, we do not believe this additional information biased our results in any particular direction. 
+
+
+## Differences in Experiment Administration
+While we do not believe this biased our results, we do believe there may have been differences in experiment administration both among us (the experimenters) and among the participants. 
+
+Differences in experiment administration among experimenters means that we believe that the experiment was carried out differently by each of us (experimenters). The greatest violation was that Autumn and Suna gave their participants a palette cleanser whereas Pony and Hannah did not. This is a systematic difference in an experiment that should’ve been executed the same way each time. We believe that the difference in using a palette cleanser may have impacted results of the experiment. For example, the use of palette cleanser could have reduced the impact of order of tasting. It also may have reduced the perceived difference between the two olive oils, causing more guesses than definitive preferences. 
+
+Furthermore, it is not unreasonable to mention that it is very unlikely that our experiment was always performed the exact same way every time. Every participant was given the same olive oil, in the same clear shot glasses, that were marked the same. Every participant was permitted to smell and taste each of the oils one time. And every participant was asked their preferences. However, we cannot say with absolute certainty that the exact script was followed every time for every participant. While it is a shame that we could not have a completely standardized experiment for each participant, this issue is inherent when having to interact with participants to collect their measurements. We do not believe that these slight differences between experiments significantly impacted our results.
+
+# Conclusion
+Consumer marketing messaging for products is a vast industry. Companies continually seek the best way to advertise products to grow revenue. Our research team selected olive oil to understand if marketing messages have an impact on a buyer’s experience consuming a lesser known product. The results of our four week experiment show that the marketing messages crafted in our design did not have an effect on product preference compared to a factual message. Even though the generated results were not statistically significant in the above experiment, we are not convinced that marketing messages have no effect on product preferences. While mistakes occurred, we believe the greatest strength of our experiment is that it would be very easy for another group of scientists to reproduce and validate our results. Furthermore, despite our results, we believe that a statistically significant average treatment effect may be able to be observed with a stronger marketing message and a larger sample size. 
+
+\newpage
+# Bibliography
+
+Brunsø, Fjord and Grunert, ["CONSUMERS’ FOOD CHOICE AND QUALITY PERCEPTION"](https://pure.au.dk/portal/files/32302886/wp77.pdf/)\
+\
+Cleveland Clinic, ["Loss of Taste and Smell"](https://my.clevelandclinic.org/health/symptoms/16708-loss-of-taste-and-smell)\
+\
+Deliza, ["The Generation of Sensory Expectation By External Cues and Its Effect on Sensory Perception and Hedonic Ratings: A Review"](https://www.researchgate.net/publication/227766594_The_generation_of_sensory_expectation_by_external_cues_and_its_effect_on_sensory_perception_and_hedonic_ratings_A_review)\
+\
+Gerber and Green, ["Field Experiments: Design, Analysis and Interpretation"](https://www.amazon.com/Field-Experiments-Design-Analysis-Interpretation/dp/0393979954/ref=sr_1_1?crid=1NW7DHDBVKEYK&keywords=Field+Experiments%3A+Design%2C+Analysis+and+Interpretation&qid=1650422707&sprefix=field+experiments+design%2C+analysis+and+interpretation%2Caps%2C111&sr=8-1)\
+\
+Kakutani, Narumi, Kobayakawa, Kawai, Kusakabe, Kunieda, and Wada, ["Taste of breath: the temporal order of taste and smell synchronized with breathing as a determinant for taste and olfactory integration"](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5566545/)\
+\
+Lee, Frederick and Ariely, ["Try It, You’ll Like It: The Influence of Expectation, Consumption, and Revelation on Preferences for Beer"](https://pubmed.ncbi.nlm.nih.gov/17201787/)\
+\
+Levin and Gaeth, ["How Consumers are Affected by the Framing of Attribute Information Before and After Consuming the Product"](https://www.jstor.org/stable/2489471)\
+\
+Mayo Clinic, ["Q&A: COVID-19 and loss of smell, taste"](https://www.mayoclinichealthsystem.org/hometown-health/featured-topic/q-and-a-covid-19-and-loss-of-smell-taste)\
+\
+North American Olive Oil Association, ["North American Olive Oil Association Website"](https://www.aboutoliveoil.org/)\
+\
+North American Olive Oil Association, ["The keys to increasing the consumption of olive oil in the US"](https://www.aboutoliveoil.org/the-keys-to-increasing-the-consumption-of-olive-oil-in-the-us)\
+\
+Olson and Dover, ["Cognitive Effects of Deceptive Advertising"](https://www-jstor-org.libproxy.berkeley.edu/stable/3150398?seq=9)\
+\
+Wansinka, Park, Sonkaa and Morganosky, ["How Soy Labeling Influences Preference and Taste"](https://www.sciencedirect.com/science/article/abs/pii/S1096750800000318)\
+\
+
+\newpage
+# (APPENDIX) Appendix {-}
+
+# Olive Oil Testing Materials
+  1. [Olive Oil](https://www.amazon.com/gp/product/B074H5ZKPS?almBrandId=VUZHIFdob2xlIEZvb2Rz&fpw=alm)\
+  2. [Clear Shot Glasses](https://www.amazon.com/gp/product/B0821DPXXF/ref=ppx_yo_dt_b_asin_title_o01_s00?ie=UTF8&th=1) Or [100](https://www.amazon.com/dp/B08C3SRQ3L/ref=vp_d_pbmv4_TIER2_trans_lp_B0821DPXXF_pd?_encoding=UTF8&pd_rd_i=B08C3SRQ3L&pd_rd_w=peNSM&pf_rd_p=422aea45-f57b-4764-a849-eef933275314&pf_rd_r=DMG9R43C8489AAB677YN&pd_rd_r=d7591a12-c4a9-423e-8424-cd8d05f4c7a9&pd_rd_wg=mOtLd)\
+  3. Black Marker\
+
+# Olive Oil Taste Test Sample Preparation
+1. Pour 1 tablespoon of Olive Oil into two shot glasses for each participant.\
+2. Make sure that these shot glasses have been clearly marked #1 and #2 with marker.\
+3. Make sure to have the participant list with all randomizations on hand.\
+4. Make sure to have some method of recording participant responses. (Ie, print out the participant spreadsheet or record outcomes directly in the spreadsheet.)\
+5. Either print out or send participants the Experiment Agreement Form.\
+
+\newpage
+
+# Olive Oil Taste Test Script
+Welcome to the olive oil taste test! Our project team has been searching for the ideal olive oil for product data analysis for our causal experiments class. Your feedback will allow us to conduct informative research on great olive oils. 
+
+I have either texted, emailed or handed you the Experiment Agreement. Could everyone please open the form so that we can get started? 
+
+*[Wait for everyone to get to the form]*
+
+Before we begin tasting oils, I would like to go over the Experiment Agreement. Here, we have enumerated a few items of extreme importance to the validity of our test. 
+
+Please do not discuss this experiment with others in this room until the completion of the test and never discuss this experiment with anyone outside of this room. These rules are in place to stop any potential influence you might have on other people’s experimental results. If you break this agreement, you will invalidate the results of the entire experiment.
+
+One more item, at the end of the experiment, *[some number of]* lucky individuals will get to take home a sample of their favorite olive oil of the night! *[at least 1/3 of total participants = lucky individuals, for experiments with one person that one person will get a sample]*
+
+Now everyone please sign the Experiment Agreement or leave the experiment. 
+
+*[Ensure all the Experiment Agreements have been signed, if anyone does not check off all the boxes, they will not be allowed to participate.]*
+
+Alright, let’s begin the experiment. 
+*[Proceed to call our participants as needed]*
+
+***
+Could ____ please come into the olive oil tasting room. Other participants please remember to not discuss the experiment during this time. 
+
+*[In the olive oil tasting room, check that the agreement has been signed, check the order in which the participant should taste the olive oil]*
+
+Okay, so you have been assigned to sample olive oil #__ first and #___ second. Please note that you will only be able to smell and taste these oils one time. Here are your oils. Can you clearly see the labels 1 and 2?
+
+*[Wait for agreement]*\
+
+**[Control] Great, so a little info about olive oil #2. It’s a Spanish extra virgin olive oil. Because it’s extra virgin, the bitterness you taste may be affected.**\
+
+**[Treatment] Great, so a little info about olive oil #2. It’s a very special Spanish extra virgin olive oil. Spanish olive oil is a bit pricey since it is considered to be the best in the world.  And because it’s extra virgin, you might taste a little less bitterness.**\
+
+Now, please smell  olive oil #__. *[Wait 30 seconds]*
+Please smell the other olive oil. *[Wait 30 seconds]*
+Which olive oil smells better? *[Wait and record answer]*
+
+Now, please sip olive oil #__. *[Wait 30 seconds]*
+Please sip the other olive oil. 
+Which olive oil tastes more bitter? *[Wait and record answer]*
+
+Okay, and which olive oil would you prefer a sample of? *[Wait and record answer]*
+
+Excellent! Thank you so much.
+
+*[If other participants are waiting]*
+You may now leave the tasting room silently. Remember we will tell you when the experiment is over. Please do not discuss the experiment with any participants until I tell you the experiment is officially over.
+
+*[Test the next participant  repeating at the line]*
+
+The experiment is officially over! Thank you so much for participating in the olive oil taste test. The following participants will receive free samples of their favorite olive oils.
+
+# Pre-Experiment Survey
+![](../Olive_Oil_Taste_Test/pics/pre-experiment_survey.png){width=85%, height=85%}
+
+# SUTVA Agreement
+![](../Olive_Oil_Taste_Test/pics/SUTVA_agreement.png)
+
+# Example of Participant List
+![](../Olive_Oil_Taste_Test/pics/participant_list.png){width=85%, height=85%}
+
+
+
+# Randomization Code
+**This code will perform complete randomization on participants who have not yet been assigned to treatment or control groups. It will also perform a simple binary randomization on participants who have not yet been assigned to take either olive oil #1 or #2 first.**
+
+```{r import dependencies, eval=FALSE, echo=TRUE}
+library(data.table)
+library(readxl)
+library("writexl")
+
+set.seed(14) 
+```
+
+```{r import data, eval=FALSE, echo=TRUE}
+filename <- "Olive Oil Experiment Participant List_3_19_22_v2.xlsx" # Change Me!
+
+data <- read_excel(paste("./data/participant_data/", filename, sep=""),
+                   sheet = 'Sheet1', skip = 2, col_names = TRUE)
+data <- data.table(data)
+head(data)
+```
+
+```{r random assignment to treatment and control, eval=FALSE, echo=TRUE}
+azzigned <- data[is.na(azzignment) == FALSE]
+needs_azzignment <- data[is.na(azzignment) == TRUE]
+
+rand_assignment_vec <- sample(rep(c('control', 'treatment'), each=ceiling(nrow(needs_azzignment)/2)))
+
+if (nrow(needs_azzignment) < length(rand_assignment_vec)) {
+  rand_assignment_vec <-rand_assignment_vec[-2]}
+
+needs_azzignment[ , azzignment := rand_assignment_vec]
+azzigned_data1 <- rbind(azzigned, needs_azzignment)
+```
+
+```{r random assignment to first olive oil, eval=FALSE, echo=TRUE}
+azzigned <- azzigned_data1[is.na(first_oo) == FALSE]
+needs_azzignment <- azzigned_data1[is.na(first_oo) == TRUE]
+
+rand_assignment_vec <- rbinom(n=nrow(needs_azzignment), size=1, prob=0.5)
+
+needs_azzignment[ , first_oo := rand_assignment_vec]
+azzigned_data2 <- rbind(azzigned, needs_azzignment)
+```
+
+```{r write new excel file, eval=FALSE, echo=TRUE}
+random_file = paste("./data/randomized_participant_data/randomized_", filename, sep="")
+write_xlsx(azzigned_data2, random_file)
+```
 

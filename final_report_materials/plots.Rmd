@@ -1,0 +1,367 @@
+---
+title: "Olive Oil Taste Test Pilot Data"
+output: pdf_document
+date: '2022-03-15'
+---
+
+
+```{r load packages, warning=FALSE, message = FALSE}
+#tinytex::install_tinytex()
+
+library(data.table)
+library(ggplot2)
+library(reshape)
+library(readxl)
+library(stringr)
+library(stargazer)
+library(reshape)
+library(data.table)
+library(sandwich)
+library(lmtest)
+```
+
+```{r import data}
+filename <- "../data/final_data/de-identified_data.xlsx"
+
+data <- data.table(read_excel(filename, 
+                   sheet = 'All', skip = 0, col_names = TRUE))
+```
+
+```{r Data Cleanup}
+
+# Add `tested` variable, Tested if better_taste != NaN.
+# 1 = Tested, 0 = Not tested yet
+data[, tested := ifelse(is.na(better_taste) == FALSE, 1, 0)]
+
+# Only interested in tested population.
+data <- data[(tested==1), ]
+
+# 1 if participant tasted olive oil 1+ times prior to experiment, 0 otherwise
+data[, tasting_count := ifelse(tasting_count >= 1, 1, 0)]
+
+# 1 if participant tested positive for covid in the past two years, 0 otherwise
+data[, covid := ifelse(covid == "Yes", 1, 0)]
+
+# 1 if participant azzigned to treatment, 0 otherwise
+data[, azzignment := ifelse(azzignment == "treatment", 1, 0)]
+
+# 1 if participant said oo 2 had a better smell, 0 if participant said oo 1 had a better smell, NA if same
+#data[, better_smell := ifelse(better_smell > 1, 1, 0, na=TRUE)]
+data[, better_smell := ifelse(better_smell==2, 1, ifelse(better_smell==1, 0, NaN))]
+data[, more_bitter := ifelse(more_bitter==2, 1, ifelse(more_bitter==1, 0, NaN))]
+data[, better_taste := ifelse(better_taste==2, 1, ifelse(better_taste==1, 0, NaN))]
+
+# Adding an adjusted birth country column
+data[, adj_birth_country := ifelse(birth_country=='USA', 'USA', ifelse(birth_country=='Turkey', 'Turkey', 'Other'))]
+
+# Adding an adjusted age range column
+data[, adj_age := ifelse(age=='18 to 24' | age=='25 to 34', '18 to 34',
+                         ifelse(age =='35 to 44' | age=='45 to 54', '35 to 54','55 or older'))]
+
+# Adding treatment column
+data[, treatment := ifelse(azzignment==0 & first_oo==0, 'Recieved Factual\nMessage & Olive\nOil #1 First', 
+                           ifelse(azzignment==0 & first_oo==1, 'Recieved Factual\nMessage & Olive\nOil #2 First', 
+                                  ifelse(azzignment==1 & first_oo==0, 'Recieved Marketing\nMessage & Olive\nOil #1 First',
+                                         ifelse(azzignment==1 & first_oo==1, 'Recieved Marketing\nMessage & Olive\nOil #2 First', 'none'))))]
+
+# Removing unnecessary columns
+data[,c("agree_to_taste", "tested"):=NULL]
+data
+```
+
+
+
+
+```{r Correlation matrix, fig.cap="Full Model Correlation"}
+## Correlation Matrix!!
+numeric_data <- data[, c("gender", "tasting_count", "covid", "azzignment", "first_oo", "better_smell", "more_bitter", "better_taste")]
+colnames(numeric_data) <- c("Gender (G)", "Olive Oil Tasting Experience (OC)", "Had Covid (C)", "Message (M)", "Olive Oil Order (O)", "Preferred Smell (S)", "More Bitter (B)", "Preferred Taste (T)")
+
+# Create a correlation dataframe
+raw_corr_data <- cor(numeric_data)
+rounded_corr_data <- round(raw_corr_data, 2)
+
+# Get upper triangle of the correlation dataframe
+get_upper_tri <- function(corr_matrix){
+  corr_matrix[lower.tri(corr_matrix)]<- NA
+  return(corr_matrix)}
+
+upper_tri <- get_upper_tri(rounded_corr_data)
+
+melted_cor_matrix <- melt(upper_tri, na.rm = TRUE) # flatten correlation dataframe
+
+# Generate correlation heatmap
+full_model_corr_matrix <- ggplot(data = melted_cor_matrix, aes(X2, X1, fill = value)) + 
+  geom_tile(color = "white") +
+  labs(title = "Full Model Correlation Matrix", x='', y='') +
+  scale_fill_gradient2(low = "#bad824", high = "#5a8a00", mid = "white",
+                       midpoint = 0, limit = c(-1,1), space = "Lab", 
+                       name="Pearson\nCorrelation") +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, size = 10, hjust = 1)) +
+  theme(axis.text.y = element_text(size = 10)) +
+  theme(legend.key.size = unit(1, 'cm')) +
+  coord_fixed()
+full_model_corr_matrix # Print correlation heat map
+```
+
+```{r covariate check on tasting_count, fig.cap="Number of Olive Oil Tastings (OC) Covariate Balance Check", warning=FALSE}
+# Check on tasting_count Distributions
+melted_tasting_count_data <- data.table(melt(data[, table(treatment, by=(tasting_count))], id=c("treatment")))
+melted_tasting_count_data <- melted_tasting_count_data[order(rank(treatment))]
+
+# Build title.
+tasting_count_title = 'Majority of sample had little prior experience tasting olive oil. Distribution\namong treatment groups was relatively equal.'
+
+# Build Plot.
+ggplot(melted_tasting_count_data, aes(fill=as.factor(by), y=value, x=treatment)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  ggtitle(tasting_count_title) +
+  scale_x_discrete(name = "", labels = c('Recieved Factual\nMessage & Olive\nOil #1 First', 'Recieved Factual\nMessage & Olive\nOil #2 First', 'Recieved Marketing\nMessage & Olive\nOil #1 First', 'Recieved Marketing\nMessage & Olive\nOil #2 First'), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c('0 Tastings', '1+ Tastings'), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 5)) +
+  geom_text(aes(x=c(.77, 1.23, 1.77, 2.23, 2.77, 3.23, 3.77, 4.23), 
+                label = melted_tasting_count_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+```
+
+```{r covariate check on covid, fig.cap="Covid (C) Covariate Balance Check", warning=FALSE}
+# Check on covid Distributions
+melted_covid_data <- data.table(melt(data[, table(treatment, by=(covid))], id=c("treatment")))
+melted_covid_data <- melted_covid_data[order(rank(treatment))]
+
+# Build title.
+covid_title = 'Relatively even distribution of covid between treatment groups.'
+
+# Build Plot.
+ggplot(melted_covid_data, aes(fill=as.factor(by), y=value, x=treatment)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  ggtitle(covid_title) +
+  scale_x_discrete(name = "", labels = c('Recieved Factual\nMessage & Olive\nOil #1 First', 'Recieved Factual\nMessage & Olive\nOil #2 First', 'Recieved Marketing\nMessage & Olive\nOil #1 First', 'Recieved Marketing\nMessage & Olive\nOil #2 First'), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c('Did Not Have Covid', 'Had Covid'), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 4)) +
+  geom_text(aes(x=c(.77, 1.23, 1.77, 2.23, 2.77, 3.23, 3.77, 4.23), 
+                label = melted_covid_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+```
+
+
+```{r covariate check on age, fig.cap="Age (A) Covariate Balance Check", warning=FALSE}
+# Check on Age Distributions
+melted_age_data <- data.table(melt(data[, table(treatment, by=(adj_age))], id=c("treatment")))
+melted_age_data <- melted_age_data[order(rank(treatment))]
+
+# Build title.
+age_title = 'Age is not distributed evenly amongst the four treatment groups. This is\nparticularly evident in the group that received both marketing message\nand tasted olive oil #2 first.'
+
+# Build Plot.
+ggplot(melted_age_data, aes(fill=as.factor(by), y=value, x=treatment)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  ggtitle(age_title) +
+  ylab("Number of Participants") + 
+  scale_x_discrete(name = "", labels = c('Recieved Factual\nMessage & Olive\nOil #1 First', 'Recieved Factual\nMessage & Olive\nOil #2 First', 'Recieved Marketing\nMessage & Olive\nOil #1 First', 'Recieved Marketing\nMessage & Olive\nOil #2 First'), guide = guide_axis(angle = 0)) +
+  scale_fill_manual(name = "", 
+                    labels = c('18 to 34', '35 to 54', '55+'), 
+                    values=c("#c8f259", "#83b300", "#597400"))+
+  scale_y_continuous(expand = c(0, 0, 0, 3)) +
+  geom_text(aes(x=c(.7, 1, 1.3, 1.7, 2, 2.3, 2.7, 3, 3.3, 3.7, 4, 4.3), 
+                label = melted_age_data[, value],
+                family = "Times"), 
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+```
+
+
+```{r covariate check on birth_country, fig.cap="Birth Country (BC) Covariate Balance Check", warning=FALSE}
+# Check on Birth Country Distributions
+melted_birth_country_data <- data.table(melt(data[, table(treatment, by=(adj_birth_country))], id=c("treatment")))
+melted_birth_country_data <- melted_birth_country_data[order(rank(treatment))]
+
+# Build title.
+birth_country_title = 'Relatively even distribution of major birth country categories between\ntreatment groups.'
+
+# Build Plot.
+ggplot(melted_birth_country_data, aes(fill=as.factor(by), y=value, x=treatment)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  # geom_bar(position="stack", stat="identity") +
+  ggtitle(birth_country_title) +
+  xlab("Participant Covid Status") + ylab("Number of Participants") + 
+  scale_x_discrete(name = "", labels = c('Recieved Factual\nMessage & Olive\nOil #1 First', 'Recieved Factual\nMessage & Olive\nOil #2 First', 'Recieved Marketing\nMessage & Olive\nOil #1 First', 'Recieved Marketing\nMessage & Olive\nOil #2 First'), guide = guide_axis(angle = 0)) +
+  #scale_fill_discrete(name="", labels = c('Other', 'Turkey', 'USA')) +
+  scale_fill_manual(name = "", 
+                    labels = c('Other', 'Turkey', 'USA'), 
+                    values=c("#c8f259", "#83b300", "#597400"))+
+  scale_y_continuous(expand = c(0, 0, 0, 2)) +
+  geom_text(aes(x=c(.7, 1, 1.3, 1.7, 2, 2.3, 2.7, 3, 3.3, 3.7, 4, 4.3), 
+                label = melted_birth_country_data[, value],
+                family = "Times"), 
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+```
+
+
+
+
+```{r covariate check on gender, fig.cap="Gender (G) Covariate Balance Check", warning=FALSE}
+# Check on gender Distributions
+melted_gender_data <- data.table(melt(data[, table(treatment, by=(sex))], id=c("treatment")))
+melted_gender_data <- melted_gender_data[order(rank(treatment))]
+
+# Build title.
+gender_title = 'Relatively even distribution of genders between treatment groups.'
+
+# Build Plot.
+ggplot(melted_gender_data, aes(fill=as.factor(by), y=value, x=treatment)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  ggtitle(gender_title) +
+  scale_x_discrete(name = "", labels = c('Recieved Factual\nMessage & Olive\nOil #1 First', 'Recieved Factual\nMessage & Olive\nOil #2 First', 'Recieved Marketing\nMessage & Olive\nOil #1 First', 'Recieved Marketing\nMessage & Olive\nOil #2 First'), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c('Male', 'Female'), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 4)) +
+  geom_text(aes(x=c(.77, 1.23, 1.77, 2.23, 2.77, 3.23, 3.77, 4.23), 
+                label = melted_gender_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+
+```
+
+
+
+
+
+```{r Make functions for power analysis, include=TRUE} 
+# Function to generate fake data...
+make_data <- function(N=2000, ate=.5) { 
+  control <- data.table(
+    'azzignment' = c(rep('Control',N/2)), 
+    'better_taste' = c(sample(c(rep(0,N/4), rep(1,N/4)))))
+  treatment <- data.table(
+  'azzignment' = c(rep('Treatment',N/2)), 
+  'better_taste' = c(sample(c(rep(0,(N/4)-(ate*N/2)), rep(1,(N/4)+(ate*N/2))))))
+  d <- rbind(control, treatment)
+  return(d)
+}
+
+# Function to get the random inference p-value.
+ri_p_value <- function(d = fake_pop_data, simulations=0, sample_size=5) { 
+  p_value_vec <- NA
+  for (simulation in 1:simulations) {
+    sample_random_assignment <- d[ , .(better_taste = sample(better_taste, sample_size, replace=TRUE))
+                                   , by = azzignment]
+    p_value <- t.test(better_taste ~ azzignment, 
+                      sample_random_assignment)$p.value
+    
+    p_value_vec[simulation] <- p_value
+    }
+  return(p_value_vec)
+  }
+
+# Function to perform randomized inference on p-values of a Two Sample Welch 
+# T-Test on a percentage of the sample. 
+get_n_p_value_rejects <- function(N=0, d=fake_pop_data) { 
+  sample_size_per_group <- N/2
+  n_t_test_p_values <- ri_p_value(d, 1000, sample_size_per_group)
+  n_t_test_rejects <- mean(n_t_test_p_values <= .05)
+  return (n_t_test_rejects)}
+```
+
+```{r Conduct power analysis, fig.cap="Power Analysis"}
+# Generate fake data.
+fake_pop_data <- make_data(10000, .05)  
+
+# Populate the percent p-value rejects vector.
+N_to_sample <-  c(80, 100)
+#N_to_sample <-  c(80, 100, 250, 500, 1000, 1500, 2000, 2500, 3000, 5000, 7500, 10000)
+n_p_value_rejects <- NA
+
+for (i in 1:length(N_to_sample)) {
+  n_p_value_rejects[i] <- get_n_p_value_rejects(N_to_sample[i], fake_pop_data)
+}
+n_p_value_rejects_dt <- data.table(N_to_sample, n_p_value_rejects)
+
+# Plot results!
+ggplot(data=n_p_value_rejects_dt, aes(x=N_to_sample, y=n_p_value_rejects, group=1))+
+  geom_line(color="#83b300") +
+  geom_point(color="#83b300") +
+  scale_y_continuous(labels = scales::percent, expand = c(0, 0, 0, .01)) +
+  labs(
+      title = "% of P Values that Reject the Null Hypothesis by Sample Size\nAssuming a 5% Average Treatment Effect of Marketing Messages on\nOlive Oil Preference.",
+      x = 'N of the Population Sampled', 
+      y = "% of P-Values that Reject the Null") +
+    theme_bw() + 
+    theme(text=element_text(family="Times")) +
+    theme(title = element_text(size = 12)) + 
+    theme(axis.title = element_text(size = 10))
+
+```
+
+```{r check first olive oil 1 vs 2 ratios, fig.cap="Randomization Check", warning=FALSE}
+### Randomization Check
+melted_first_oo_data <- data.table(melt(data[, table(azzignment, by=(first_oo))], id=c("azzignment")))
+melted_first_oo_data[, azzignment := ifelse(azzignment==0, "Factual Message\n(Control)", "Marketing Message\n(Treatment)")]
+melted_first_oo_data <- melted_first_oo_data[order(rank(azzignment))]
+
+# Build title.
+first_oo_title = 'Binomial randomization of first olive oil produced uneven partitions within\nmessage groups.'
+
+# Build Plot.
+ggplot(melted_first_oo_data, aes(fill=as.factor(by), y=value, x=azzignment)) + 
+  geom_bar(stat = "identity",
+        aes(fill = factor(by)),
+        position = position_dodge(width = 0.9)) +
+  ggtitle(first_oo_title) +
+  scale_x_discrete(name = "", labels = c("Factual Message\n(Control)", "Marketing Message\n(Treatment)"), guide = guide_axis(angle = 0)) +
+  ylab("Number of Participants") + 
+  scale_fill_manual(name = "", 
+                    labels = c("Tasted OO #1 First", "Tasted OO #2 First"), 
+                    values=c("#bad824", "#5a8a00"))+
+  scale_y_continuous(expand = c(0, 0, 0, 3)) +
+  geom_text(aes(x=c(.77, 1.23, 1.77, 2.23), 
+                label = melted_first_oo_data[, value],
+                family = "Times"),
+            vjust=-.5) +
+  theme_bw() + 
+  theme(text=element_text(family="Times")) +
+  theme(title = element_text(size = 12)) + 
+  theme(axis.title = element_text(size = 10))
+```

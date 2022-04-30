@@ -1,0 +1,85 @@
+---
+title: "Script"
+output: pdf_document
+date: '2022-04-20'
+---
+
+```{r load packages, warning=FALSE, message = FALSE}
+#tinytex::install_tinytex()
+
+library(data.table)
+library(ggplot2)
+library(reshape)
+library(readxl)
+library(stringr)
+library(stargazer)
+library(reshape)
+library(data.table)
+library(sandwich)
+library(lmtest)
+```
+
+Olive Oil Testing Materials:\
+  1. [Olive Oil](https://www.amazon.com/gp/product/B074H5ZKPS?almBrandId=VUZHIFdob2xlIEZvb2Rz&fpw=alm)\
+  2. [Clear Shot Glasses](https://www.amazon.com/gp/product/B0821DPXXF/ref=ppx_yo_dt_b_asin_title_o01_s00?ie=UTF8&th=1) Or [100](https://www.amazon.com/dp/B08C3SRQ3L/ref=vp_d_pbmv4_TIER2_trans_lp_B0821DPXXF_pd?_encoding=UTF8&pd_rd_i=B08C3SRQ3L&pd_rd_w=peNSM&pf_rd_p=422aea45-f57b-4764-a849-eef933275314&pf_rd_r=DMG9R43C8489AAB677YN&pd_rd_r=d7591a12-c4a9-423e-8424-cd8d05f4c7a9&pd_rd_wg=mOtLd)\
+  3. Black Marker\
+
+Olive Oil Taste Test Sample Preparation:\
+1. Pour 1 tablespoon of Olive Oil into two shot glasses for each participant.\
+2. Make sure that these shot glasses have been clearly marked #1 and #2 with marker.\
+3. Make sure to have the participant list with all randomizations on hand.\
+4. Make sure to have some method of recording participant responses. (Ie, print out the participant spreadsheet or record outcomes directly in the spreadsheet.)\
+5. Either print out or send participants the Experiment Agreement Form.\
+
+Olive Oil Taste Test Script:\
+Welcome to the olive oil taste test! Our project team has been searching for the ideal olive oil for product data analysis for our causal experiments class. Your feedback will allow us to conduct informative research on great olive oils. 
+
+I have either texted, emailed or handed you the Experiment Agreement. Could everyone please open the form so that we can get started? 
+
+*[Wait for everyone to get to the form]*
+
+Before we begin tasting oils, I would like to go over the Experiment Agreement. Here, we have enumerated a few items of extreme importance to the validity of our test. 
+
+Please do not discuss this experiment with others in this room until the completion of the test and never discuss this experiment with anyone outside of this room. These rules are in place to stop any potential influence you might have on other people’s experimental results. If you break this agreement, you will invalidate the results of the entire experiment.
+
+One more item, at the end of the experiment, *[some number of]* lucky individuals will get to take home a sample of their favorite olive oil of the night! *[at least 1/3 of total participants = lucky individuals, for experiments with one person that one person will get a sample]*
+
+Now everyone please sign the Experiment Agreement or leave the experiment. 
+
+*[Ensure all the Experiment Agreements have been signed, if anyone does not check off all the boxes, they will not be allowed to participate.]*
+
+Alright, let’s begin the experiment. 
+*[Proceed to call our participants as needed]*
+
+***
+Could ____ please come into the olive oil tasting room. Other participants please remember to not discuss the experiment during this time. 
+
+*[In the olive oil tasting room, check that the agreement has been signed, check the order in which the participant should taste the olive oil]*
+
+Okay, so you have been assigned to sample olive oil #__ first and #___ second. Please note that you will only be able to smell and taste these oils one time. Here are your oils. Can you clearly see the labels 1 and 2?
+
+*[Wait for agreement]*\
+
+**[Control] Great, so a little info about olive oil #2. It’s a Spanish extra virgin olive oil. Because it’s extra virgin, the bitterness you taste may be affected.**\
+
+**[Treatment] Great, so a little info about olive oil #2. It’s a very special Spanish extra virgin olive oil. Spanish olive oil is a bit pricey since it is considered to be the best in the world.  And because it’s extra virgin, you might taste a little less bitterness.**\
+
+Now, please smell  olive oil #__. *[Wait 30 seconds]*
+Please smell the other olive oil. *[Wait 30 seconds]*
+Which olive oil smells better? *[Wait and record answer]*
+
+Now, please sip olive oil #__. *[Wait 30 seconds]*
+Please sip the other olive oil. 
+Which olive oil tastes more bitter? *[Wait and record answer]*
+
+Okay, and which olive oil would you prefer a sample of? *[Wait and record answer]*
+
+Excellent! Thank you so much.
+
+*[If other participants are waiting]*
+You may now leave the tasting room silently. Remember we will tell you when the experiment is over. Please do not discuss the experiment with any participants until I tell you the experiment is officially over.
+
+*[Test the next participant  repeating at the line]*
+
+The experiment is officially over! Thank you so much for participating in the olive oil taste test. The following participants will receive free samples of their favorite olive oils.
+

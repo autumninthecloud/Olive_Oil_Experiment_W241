@@ -9,7 +9,8 @@ library(nnet)
 
 
 ```{r}
-data <- read_excel("~/w241/Olive_Oil_Taste_Test/data/final_data/manually_cleaned_data.xlsx")
+# data <- read_excel("~/w241/Olive_Oil_Taste_Test/data/final_data/manually_cleaned_data.xlsx")
+data <- data.table(read_excel("~/Olive_Oil_Taste_Test/data/final_data/de-identified_data.xlsx"))
 ```
 
 ```{r}

@@ -1,0 +1,33 @@
+---
+title: "Bibliography"
+output: pdf_document
+date: '2022-04-20'
+---
+
+# Bibliography
+
+Brunsø, Fjord and Grunert, ["CONSUMERS’ FOOD CHOICE AND QUALITY PERCEPTION"](https://pure.au.dk/portal/files/32302886/wp77.pdf/)\
+\
+Cleveland Clinic, ["Loss of Taste and Smell"](https://my.clevelandclinic.org/health/symptoms/16708-loss-of-taste-and-smell)\
+\
+Deliza, ["The Generation of Sensory Expectation By External Cues and Its Effect on Sensory Perception and Hedonic Ratings: A Review"](https://www.researchgate.net/publication/227766594_The_generation_of_sensory_expectation_by_external_cues_and_its_effect_on_sensory_perception_and_hedonic_ratings_A_review)\
+\
+Gerber and Green, ["Field Experiments: Design, Analysis and Interpretation"](https://www.amazon.com/Field-Experiments-Design-Analysis-Interpretation/dp/0393979954/ref=sr_1_1?crid=1NW7DHDBVKEYK&keywords=Field+Experiments%3A+Design%2C+Analysis+and+Interpretation&qid=1650422707&sprefix=field+experiments+design%2C+analysis+and+interpretation%2Caps%2C111&sr=8-1)\
+\
+Kakutani, Narumi, Kobayakawa, Kawai, Kusakabe, Kunieda, and Wada, ["Taste of breath: the temporal order of taste and smell synchronized with breathing as a determinant for taste and olfactory integration"](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5566545/)\
+\
+Lee, Frederick and Ariely, ["Try It, You’ll Like It: The Influence of Expectation, Consumption, and Revelation on Preferences for Beer"](https://pubmed.ncbi.nlm.nih.gov/17201787/)\
+\
+Levin and Gaeth, ["How Consumers are Affected by the Framing of Attribute Information Before and After Consuming the Product"](https://www.jstor.org/stable/2489471)\
+\
+Mayo Clinic, ["Q&A: COVID-19 and loss of smell, taste"](https://www.mayoclinichealthsystem.org/hometown-health/featured-topic/q-and-a-covid-19-and-loss-of-smell-taste)\
+\
+North American Olive Oil Association, ["North American Olive Oil Association Website"](https://www.aboutoliveoil.org/)\
+\
+North American Olive Oil Association, ["The keys to increasing the consumption of olive oil in the US"](https://www.aboutoliveoil.org/the-keys-to-increasing-the-consumption-of-olive-oil-in-the-us)\
+\
+Olson and Dover, ["Cognitive Effects of Deceptive Advertising"](https://www-jstor-org.libproxy.berkeley.edu/stable/3150398?seq=9)\
+\
+Wansinka, Park, Sonkaa and Morganosky, ["How Soy Labeling Influences Preference and Taste"](https://www.sciencedirect.com/science/article/abs/pii/S1096750800000318)\
+\
+

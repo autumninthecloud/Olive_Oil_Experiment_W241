@@ -19,7 +19,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r import data, echo=FALSE}
-filename <- "./data/final_data/de-identified_data.xlsx"
+filename <- "../data/final_data/de-identified_data.xlsx"
 
 data <- data.table(read_excel(filename, 
                    sheet = 'All', skip = 0, col_names = TRUE))
@@ -27,7 +27,7 @@ data <- data.table(read_excel(filename,
 
 ```{r Data Cleanup, echo=FALSE}
 # Removing unnecessary columns
-data[,c("admin","s_agreement", "agree_to_taste"):=NULL]
+#data[,c("admin","s_agreement", "agree_to_taste"):=NULL]
 
 # Add `tested` variable, Tested if better_taste != NaN.
 # 1 = Tested, 0 = Not tested yet
@@ -46,16 +46,21 @@ data[, azzignment := ifelse(azzignment == "treatment", 1, 0)]
 #data[, better_smell := ifelse(better_smell > 1, 1, 0, na=TRUE)]
 data[, better_smell := ifelse(better_smell==2, 1, ifelse(better_smell==1, 0, NaN))]
 data[, more_bitter := ifelse(more_bitter==2, 1, ifelse(more_bitter==1, 0, NaN))]
-data[, better_taste := ifelse(better_taste==2, 1, ifelse(better_taste==1, 0, NaN))]
+#data[, better_taste := ifelse(better_taste==2, 1, ifelse(better_taste==1, 0, NaN))]
 ```
 
 
 ```{r Convert binary categoricals to full on binary, echo=FALSE}
 d <- data[(tested==1), ][, c('id', 'azzignment', 'first_oo', 'better_taste')]
-d
+summary(d)
 ```
 
 ```{r simple models}
+d[, log(better_taste)]
+new <- d[, lm(log(better_taste) ~  azzignment + first_oo + azzignment* first_oo)]
+new_mod <- coeftest(new,vcovHC(new))
+new_mod
+
 print('Without interaction term')
 simple2 <- d[, lm(better_taste ~ azzignment)]
 simple2_mod <- coeftest(simple2,vcovHC(simple2))

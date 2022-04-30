@@ -1,0 +1,113 @@
+---
+title: "power_calc"
+output:
+  pdf_document: default
+  html_document: default
+date: '2022-04-14'
+---
+```{r load packages, warning=FALSE, message = FALSE}
+#tinytex::install_tinytex()
+
+library(data.table)
+library(ggplot2)
+library(reshape)
+library(readxl)
+library(stringr)
+library(stargazer)
+library(reshape)
+```
+
+## Let's imagine that our predicted ATE of a positive marketing message is 5% more likely to prefer Olive Oil #2
+```{r, include=TRUE} 
+# Generate Fake Data...
+make_data <- function(N=2000, ate=.5) { 
+  control <- data.table(
+    'azzignment' = c(rep('Control',N/2)), 
+    'better_taste' = c(sample(c(rep(0,N/4), rep(1,N/4)))))
+  treatment <- data.table(
+  'azzignment' = c(rep('Treatment',N/2)), 
+  'better_taste' = c(sample(c(rep(0,(N/4)-(ate*N/2)), rep(1,(N/4)+(ate*N/2))))))
+  d <- rbind(control, treatment)
+  return(d)
+}
+
+fake_pop_data <- make_data(10000, .05)  
+summary(fake_pop_data[, lm(better_taste ~ azzignment)])
+```
+
+
+```{r function to get the random inference p-value, include=TRUE}
+ri_p_value <- function(d = fake_pop_data, simulations=0, sample_size=5) { 
+  p_value_vec <- NA
+  for (simulation in 1:simulations) {
+    sample_random_assignment <- d[ , .(better_taste = sample(better_taste, sample_size, replace=TRUE))
+                                   , by = azzignment]
+    p_value <- t.test(better_taste ~ azzignment, 
+                      sample_random_assignment)$p.value
+    
+    p_value_vec[simulation] <- p_value
+    }
+  return(p_value_vec)
+  }
+```
+
+```{r graph the random inference p-value vector, include=TRUE}
+
+graph_ri_p_value <- function(p_values=NA, total_sample_size=0) { 
+  t = data.table(p_values)
+  
+  test <- ggplot(t, aes(x=p_values)) + 
+    geom_histogram(bins = 25, fill="#83b300") +
+    labs(
+      title = sprintf("P Values derived from %i person sample.", total_sample_size),
+      x = 'RI P-Value', 
+      y = "Count of Observations") +
+    theme_bw() + 
+    theme(text=element_text(family="Times")) +
+    theme(title = element_text(size = 10.5)) + 
+    theme(axis.title = element_text(size = 10))+
+    geom_vline(aes(xintercept = .05),
+              color="red",  size=1)
+  return (test)
+}
+# t_test_p_values <- rep(NA, 10)
+t_test_p_values <- ri_p_value(fake_pop_data, 1000, 500)
+graph_ri_p_value(t_test_p_values, 1000)
+```
+
+```{r, include=TRUE}
+# This function will perform randomized inference on p-values of a Two Sample Welch T-Test on a percentage of the sample. 
+get_n_p_value_rejects <- function(N=0, d=fake_pop_data) { 
+  sample_size_per_group <- N/2
+  n_t_test_p_values <- ri_p_value(d, 1000, sample_size_per_group)
+  n_t_test_rejects <- mean(n_t_test_p_values <= .05)
+  return (n_t_test_rejects)}
+
+# Populate the percent p-value rejects vector.
+N_to_sample <-  c(80, 100, 250, 500, 1000, 1500, 2000, 2500, 3000, 5000, 7500, 10000)
+n_p_value_rejects <- NA
+
+for (i in 1:length(N_to_sample)) {
+  n_p_value_rejects[i] <- get_n_p_value_rejects(N_to_sample[i], fake_pop_data)
+}
+n_p_value_rejects_dt <- data.table(N_to_sample, n_p_value_rejects)
+```
+
+
+
+```{r graph p-values, include=TRUE} 
+# Plot results!
+ggplot(data=n_p_value_rejects_dt, aes(x=N_to_sample, y=n_p_value_rejects, group=1))+
+  geom_line(color="#83b300") +
+  geom_point(color="#83b300") +
+  scale_y_continuous(labels = scales::percent)+
+  labs(
+      title = "% of P Values that Reject the Null Hypothesis by Sample Size.",
+      x = 'N of the Population Sampled', 
+      y = "% of P-Values that Reject the Null") +
+    theme_bw() + 
+    theme(text=element_text(family="Times")) +
+    theme(title = element_text(size = 12)) + 
+    theme(axis.title = element_text(size = 10))
+
+```
