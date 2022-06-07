@@ -24,3 +24,5 @@ this experiment with a large sample and a potent marketing message to produce mo
 
 ### Course Information
 [UC BERKELEY MIDS: W241 - Experiments and Causal Inference](https://www.ischool.berkeley.edu/courses/datasci/241)
+
+![image](https://github.com/autumninthecloud/w241_final_project/blob/main/oo.jpg)
